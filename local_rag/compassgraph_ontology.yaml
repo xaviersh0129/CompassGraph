@@ -1,0 +1,209 @@
+name: CompassGraph Ontology
+version: 1.0
+description: >
+  Ontology for building a local GraphRAG knowledge graph from course notes,
+  career notes, project notes, and personal goals.
+
+node_types:
+  Course:
+    description: A university course or structured learning source.
+    examples:
+      - BT4016 Risk Analytics for Financial Services
+      - IS4226 Systematic Trading Strategies and Systems
+      - ETP3211 New Venture Creation
+
+  Concept:
+    description: A core idea, topic, or principle.
+    examples:
+      - Value at Risk
+      - Product-Market Fit
+      - Efficient Frontier
+      - Customer Validation
+
+  Framework:
+    description: A reusable decision-making or analytical framework.
+    examples:
+      - CAPM
+      - Magic Chain of Validation
+      - Scrum
+      - Merton Model
+
+  Method:
+    description: A computational, analytical, or practical method.
+    examples:
+      - Historical Simulation
+      - Gradient Descent
+      - Vectorised Backtesting
+      - User Story Mapping
+
+  Formula:
+    description: A mathematical equation or pricing/risk formula.
+    examples:
+      - Black-Scholes Formula
+      - VaR Formula
+      - Bond Pricing Formula
+      - CAPM Expected Return Formula
+
+  CaseStudy:
+    description: A real or teaching case used to illustrate concepts.
+    examples:
+      - Silicon Valley Bank
+      - Zipcar
+      - Singapore Airlines Fuel Hedging
+
+  Skill:
+    description: A skill the user can develop or demonstrate.
+    examples:
+      - Risk Modeling
+      - Backtesting
+      - Financial Statement Analysis
+      - Product Validation
+
+  CareerPath:
+    description: A broad career direction.
+    examples:
+      - Venture Capital
+      - Quant Finance
+      - Product Strategy
+      - Analytics Engineering
+
+  Role:
+    description: A specific job role.
+    examples:
+      - Risk Analyst
+      - Quant Researcher
+      - Product Manager
+      - VC Analyst
+
+  Company:
+    description: A company, bank, fund, startup, or institution.
+    examples:
+      - DBS
+      - GIC
+      - Stripe
+      - Jane Street
+      - Silicon Valley Bank
+
+  ProjectIdea:
+    description: A project that can demonstrate proof-of-work.
+    examples:
+      - VaR dashboard
+      - Systematic trading backtester
+      - Startup validation memo
+      - Fintech risk report
+
+  Goal:
+    description: A user goal, career objective, or strategic outcome.
+    examples:
+      - Enter venture capital
+      - Become an investor
+      - Get a product strategy role
+      - Build quant finance proof-of-work
+
+  Risk:
+    description: A source of downside, uncertainty, or failure.
+    examples:
+      - Market Risk
+      - Credit Risk
+      - Liquidity Risk
+      - Startup Failure Risk
+
+  DecisionCriterion:
+    description: A criterion used to compare choices or make decisions.
+    examples:
+      - Expected Return
+      - Downside Risk
+      - Career Fit
+      - Skill Transferability
+      - Proof-of-Work Value
+
+edge_types:
+  TEACHES:
+    description: A course or source teaches a concept, framework, method, or skill.
+    example: BT4016 -> TEACHES -> Value at Risk
+
+  USES:
+    description: A framework, method, or concept uses another concept, formula, or input.
+    example: CAPM -> USES -> Beta
+
+  MEASURES:
+    description: A metric, formula, or framework measures a risk, performance, or property.
+    example: Value at Risk -> MEASURES -> Market Risk
+
+  ESTIMATES:
+    description: A method estimates a quantity or unknown value.
+    example: Historical Simulation -> ESTIMATES -> Value at Risk
+
+  SUPPORTS:
+    description: A concept, skill, or course supports a goal, career path, role, or project.
+    example: Risk Modeling -> SUPPORTS -> Risk Analyst Role
+
+  APPLIES_TO:
+    description: A concept, framework, or method applies to a domain, role, company, project, or goal.
+    example: Magic Chain of Validation -> APPLIES_TO -> Career Strategy
+
+  HELPS_WITH:
+    description: A skill, course, or framework helps with a goal or project.
+    example: IS4226 -> HELPS_WITH -> Systematic Trading Proof-of-Work
+
+  REQUIRES:
+    description: A role, goal, or project requires a skill, concept, or method.
+    example: Quant Researcher -> REQUIRES -> Statistical Modeling
+
+  RELATED_TO:
+    description: A general relationship between two connected ideas.
+    example: Expected Shortfall -> RELATED_TO -> Value at Risk
+
+  CONTRASTS_WITH:
+    description: Two concepts are meaningfully different or opposed.
+    example: Value at Risk -> CONTRASTS_WITH -> Expected Shortfall
+
+  COMPLEMENTS:
+    description: Two concepts or skills work well together.
+    example: Expected Shortfall -> COMPLEMENTS -> Value at Risk
+
+  EVALUATES:
+    description: A framework or method evaluates a target.
+    example: CAPM -> EVALUATES -> Required Return
+
+  IMPROVES:
+    description: A skill, framework, or method improves another process or outcome.
+    example: Backtesting -> IMPROVES -> Trading Strategy Evaluation
+
+  RISKS:
+    description: A factor creates or increases a risk.
+    example: Duration Mismatch -> RISKS -> Bank Solvency
+
+  PROVES:
+    description: A project, evidence, or output demonstrates a skill or capability.
+    example: VaR Dashboard -> PROVES -> Risk Modeling Skill
+
+  CAUSED_BY:
+    description: A case outcome or failure is caused by a factor.
+    example: Silicon Valley Bank Failure -> CAUSED_BY -> Interest Rate Risk
+
+  PART_OF:
+    description: A concept is part of a broader concept, framework, or course.
+    example: Delta -> PART_OF -> Option Greeks
+
+extraction_rules:
+  - Extract relationships that are useful for career reasoning, project planning, or concept retrieval.
+  - Prefer specific concepts over vague phrases.
+  - Use the exact course code and course title when linking course-level knowledge.
+  - Do not create edges from administrative course logistics unless they are useful for learning strategy.
+  - Normalize duplicate concepts where obvious, such as "VaR" and "Value at Risk".
+  - Keep relationship labels from the allowed edge_types list.
+  - Create cross-course links when two courses teach related concepts.
+  - Create career links when a concept, skill, or method is useful for a role or career path.
+
+priority_relationships:
+  - Course -> TEACHES -> Concept
+  - Course -> TEACHES -> Framework
+  - Course -> TEACHES -> Method
+  - Concept -> RELATED_TO -> Concept
+  - Framework -> USES -> Concept
+  - Method -> ESTIMATES -> Risk
+  - Skill -> SUPPORTS -> CareerPath
+  - ProjectIdea -> PROVES -> Skill
+  - Concept -> APPLIES_TO -> CareerPath
+  - CaseStudy -> CAUSED_BY -> Risk
