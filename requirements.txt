@@ -1,3 +1,4 @@
 zep-cloud
 python-dotenv
 PyYAML
+openai
