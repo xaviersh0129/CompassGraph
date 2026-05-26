@@ -1,209 +1,174 @@
 name: CompassGraph Ontology
 version: 1.0
 description: >
-  Ontology for building a local GraphRAG knowledge graph from course notes,
-  career notes, project notes, and personal goals.
+  Generic ontology for building a local GraphRAG knowledge graph from notes,
+  documents, courses, research, project plans, and reusable knowledge sources.
 
 node_types:
-  Course:
-    description: A university course or structured learning source.
+  Source:
+    description: A document, course, book, article, note, meeting, or dataset.
     examples:
-      - BT4016 Risk Analytics for Financial Services
-      - IS4226 Systematic Trading Strategies and Systems
-      - ETP3211 New Venture Creation
+      - Sample GraphRAG Basics
+      - Research Notes
+      - Project Requirements
 
   Concept:
-    description: A core idea, topic, or principle.
+    description: A core idea, topic, principle, or term.
     examples:
-      - Value at Risk
-      - Product-Market Fit
-      - Efficient Frontier
-      - Customer Validation
+      - Knowledge Graph
+      - Semantic Search
+      - Evaluation
 
   Framework:
-    description: A reusable decision-making or analytical framework.
+    description: A reusable decision-making, analytical, or design structure.
     examples:
-      - CAPM
-      - Magic Chain of Validation
-      - Scrum
-      - Merton Model
+      - Retrieval-Augmented Generation
+      - Decision Matrix
+      - Experiment Design
 
   Method:
     description: A computational, analytical, or practical method.
     examples:
-      - Historical Simulation
-      - Gradient Descent
-      - Vectorised Backtesting
-      - User Story Mapping
+      - Chunking
+      - Entity Extraction
+      - Graph Traversal
 
   Formula:
-    description: A mathematical equation or pricing/risk formula.
+    description: A mathematical expression, metric, or symbolic rule.
     examples:
-      - Black-Scholes Formula
-      - VaR Formula
-      - Bond Pricing Formula
-      - CAPM Expected Return Formula
+      - Precision
+      - Recall
+      - Similarity Score
 
   CaseStudy:
-    description: A real or teaching case used to illustrate concepts.
+    description: A concrete example, scenario, project, or incident.
     examples:
-      - Silicon Valley Bank
-      - Zipcar
-      - Singapore Airlines Fuel Hedging
+      - Sample Search Workflow
+      - Failed Retrieval Example
+      - Product Research Case
 
   Skill:
-    description: A skill the user can develop or demonstrate.
+    description: A capability that can be developed or demonstrated.
     examples:
-      - Risk Modeling
-      - Backtesting
-      - Financial Statement Analysis
-      - Product Validation
-
-  CareerPath:
-    description: A broad career direction.
-    examples:
-      - Venture Capital
-      - Quant Finance
-      - Product Strategy
-      - Analytics Engineering
-
-  Role:
-    description: A specific job role.
-    examples:
-      - Risk Analyst
-      - Quant Researcher
-      - Product Manager
-      - VC Analyst
-
-  Company:
-    description: A company, bank, fund, startup, or institution.
-    examples:
-      - DBS
-      - GIC
-      - Stripe
-      - Jane Street
-      - Silicon Valley Bank
+      - Prompt Design
+      - Data Modeling
+      - Evaluation Planning
 
   ProjectIdea:
-    description: A project that can demonstrate proof-of-work.
+    description: A project, artifact, prototype, report, or demo.
     examples:
-      - VaR dashboard
-      - Systematic trading backtester
-      - Startup validation memo
-      - Fintech risk report
+      - Local GraphRAG Workspace
+      - Knowledge Review Dashboard
+      - Source Quality Audit
 
   Goal:
-    description: A user goal, career objective, or strategic outcome.
+    description: A desired outcome or objective.
     examples:
-      - Enter venture capital
-      - Become an investor
-      - Get a product strategy role
-      - Build quant finance proof-of-work
+      - Improve Retrieval Quality
+      - Build a Reproducible Knowledge Base
+      - Reduce Duplicate Notes
 
   Risk:
-    description: A source of downside, uncertainty, or failure.
+    description: A source of uncertainty, downside, or failure.
     examples:
-      - Market Risk
-      - Credit Risk
-      - Liquidity Risk
-      - Startup Failure Risk
+      - Stale Source Data
+      - Hallucinated Links
+      - Weak Evaluation
 
   DecisionCriterion:
-    description: A criterion used to compare choices or make decisions.
+    description: A criterion used to compare options or judge quality.
     examples:
-      - Expected Return
-      - Downside Risk
-      - Career Fit
-      - Skill Transferability
-      - Proof-of-Work Value
+      - Evidence Strength
+      - Maintainability
+      - Retrieval Precision
 
 edge_types:
   TEACHES:
-    description: A course or source teaches a concept, framework, method, or skill.
-    example: BT4016 -> TEACHES -> Value at Risk
+    description: A source teaches a concept, framework, method, or skill.
+    example: Sample GraphRAG Basics -> TEACHES -> Knowledge Graph
+
+  DEFINES:
+    description: A source or concept defines another concept.
+    example: Sample GraphRAG Basics -> DEFINES -> GraphRAG
 
   USES:
-    description: A framework, method, or concept uses another concept, formula, or input.
-    example: CAPM -> USES -> Beta
+    description: A framework, method, or concept uses another concept, formula, input, or method.
+    example: Semantic Search -> USES -> Embeddings
 
   MEASURES:
-    description: A metric, formula, or framework measures a risk, performance, or property.
-    example: Value at Risk -> MEASURES -> Market Risk
-
-  ESTIMATES:
-    description: A method estimates a quantity or unknown value.
-    example: Historical Simulation -> ESTIMATES -> Value at Risk
+    description: A metric, formula, or framework measures quality, performance, or risk.
+    example: Precision -> MEASURES -> Retrieval Quality
 
   SUPPORTS:
-    description: A concept, skill, or course supports a goal, career path, role, or project.
-    example: Risk Modeling -> SUPPORTS -> Risk Analyst Role
+    description: A concept, skill, source, or method supports a goal, project, or decision.
+    example: Evaluation Plan -> SUPPORTS -> Retrieval Quality
 
   APPLIES_TO:
-    description: A concept, framework, or method applies to a domain, role, company, project, or goal.
-    example: Magic Chain of Validation -> APPLIES_TO -> Career Strategy
+    description: A concept, framework, or method applies to a domain, source, project, or goal.
+    example: GraphRAG -> APPLIES_TO -> Knowledge Review
 
   HELPS_WITH:
-    description: A skill, course, or framework helps with a goal or project.
-    example: IS4226 -> HELPS_WITH -> Systematic Trading Proof-of-Work
+    description: A skill, source, framework, or method helps with a goal or project.
+    example: Entity Extraction -> HELPS_WITH -> Reproducible Knowledge Base
 
   REQUIRES:
-    description: A role, goal, or project requires a skill, concept, or method.
-    example: Quant Researcher -> REQUIRES -> Statistical Modeling
+    description: A goal, project, method, or framework requires a skill, concept, or input.
+    example: Local GraphRAG Workspace -> REQUIRES -> Data Modeling
 
   RELATED_TO:
     description: A general relationship between two connected ideas.
-    example: Expected Shortfall -> RELATED_TO -> Value at Risk
+    example: Semantic Search -> RELATED_TO -> Retrieval Quality
 
   CONTRASTS_WITH:
     description: Two concepts are meaningfully different or opposed.
-    example: Value at Risk -> CONTRASTS_WITH -> Expected Shortfall
+    example: Keyword Search -> CONTRASTS_WITH -> Semantic Search
 
   COMPLEMENTS:
-    description: Two concepts or skills work well together.
-    example: Expected Shortfall -> COMPLEMENTS -> Value at Risk
+    description: Two concepts, methods, or skills work well together.
+    example: Vector Search -> COMPLEMENTS -> Knowledge Graph
 
   EVALUATES:
-    description: A framework or method evaluates a target.
-    example: CAPM -> EVALUATES -> Required Return
+    description: A framework, method, metric, or checklist evaluates a target.
+    example: Evaluation Plan -> EVALUATES -> Retrieval Quality
 
   IMPROVES:
     description: A skill, framework, or method improves another process or outcome.
-    example: Backtesting -> IMPROVES -> Trading Strategy Evaluation
+    example: Better Chunking -> IMPROVES -> Semantic Search
 
   RISKS:
     description: A factor creates or increases a risk.
-    example: Duration Mismatch -> RISKS -> Bank Solvency
+    example: Stale Source Data -> RISKS -> Answer Quality
+
+  MITIGATES:
+    description: A method, rule, or action reduces a risk.
+    example: Source Review -> MITIGATES -> Stale Source Data
 
   PROVES:
     description: A project, evidence, or output demonstrates a skill or capability.
-    example: VaR Dashboard -> PROVES -> Risk Modeling Skill
-
-  CAUSED_BY:
-    description: A case outcome or failure is caused by a factor.
-    example: Silicon Valley Bank Failure -> CAUSED_BY -> Interest Rate Risk
+    example: Knowledge Review Dashboard -> PROVES -> Data Modeling
 
   PART_OF:
-    description: A concept is part of a broader concept, framework, or course.
-    example: Delta -> PART_OF -> Option Greeks
+    description: A concept is part of a broader concept, framework, source, or project.
+    example: Entity Extraction -> PART_OF -> GraphRAG
 
 extraction_rules:
-  - Extract relationships that are useful for career reasoning, project planning, or concept retrieval.
+  - Extract relationships that are useful for retrieval, reasoning, planning, or review.
   - Prefer specific concepts over vague phrases.
-  - Use the exact course code and course title when linking course-level knowledge.
-  - Do not create edges from administrative course logistics unless they are useful for learning strategy.
-  - Normalize duplicate concepts where obvious, such as "VaR" and "Value at Risk".
-  - Keep relationship labels from the allowed edge_types list.
-  - Create cross-course links when two courses teach related concepts.
-  - Create career links when a concept, skill, or method is useful for a role or career path.
+  - Use stable source titles when linking source-level knowledge.
+  - Do not create edges from administrative details unless they help retrieval or reasoning.
+  - Normalize duplicate concepts where obvious, such as "vector search" and "semantic search".
+  - Keep relationship labels from the allowed edge_types list unless a project-specific label is clearly needed.
+  - Create cross-source links when two sources teach, use, or apply related concepts.
+  - Create application links when a concept, skill, or method is useful for a project or goal.
 
 priority_relationships:
-  - Course -> TEACHES -> Concept
-  - Course -> TEACHES -> Framework
-  - Course -> TEACHES -> Method
+  - Source -> TEACHES -> Concept
+  - Source -> TEACHES -> Framework
+  - Source -> TEACHES -> Method
   - Concept -> RELATED_TO -> Concept
   - Framework -> USES -> Concept
-  - Method -> ESTIMATES -> Risk
-  - Skill -> SUPPORTS -> CareerPath
+  - Method -> MEASURES -> DecisionCriterion
+  - Skill -> SUPPORTS -> Goal
   - ProjectIdea -> PROVES -> Skill
-  - Concept -> APPLIES_TO -> CareerPath
-  - CaseStudy -> CAUSED_BY -> Risk
+  - Concept -> APPLIES_TO -> Goal
+  - Method -> MITIGATES -> Risk

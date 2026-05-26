@@ -1,71 +1,38 @@
 # CompassGraph Relationship Types
 
-This file defines the standard relationship types used across CompassGraph.
+Use uppercase relationship labels in graph JSON. These common labels cover most reusable knowledge-base workflows.
 
-## Definition Relationships
+## Knowledge Structure
 
-- `defined_as`
-- `includes`
-- `has_component`
-- `example_of`
-- `type_of`
+- `TEACHES`
+- `DEFINES`
+- `INCLUDES`
+- `PART_OF`
+- `RELATED_TO`
+- `CONTRASTS_WITH`
+- `COMPLEMENTS`
 
-## Requirement Relationships
+## Method And Evidence
 
-- `requires`
-- `depends_on`
-- `needs`
-- `evaluated_by`
-- `measured_by`
+- `USES`
+- `REQUIRES`
+- `MEASURES`
+- `EVALUATES`
+- `VALIDATES`
+- `SUPPORTS`
+- `IMPROVES`
 
-## Validation Relationships
+## Planning And Risk
 
-- `validated_by`
-- `invalidated_by`
-- `tested_by`
-- `proven_by`
-- `supported_by`
+- `APPLIES_TO`
+- `HELPS_WITH`
+- `PROVES`
+- `RISKS`
+- `MITIGATES`
+- `NEXT_STEP_IS`
 
-## Causal Relationships
+## Guidance
 
-- `causes`
-- `leads_to`
-- `creates`
-- `enables`
-- `prevents`
-- `risks`
-- `mitigated_by`
-
-## Sequence Relationships
-
-- `precedes`
-- `follows`
-- `evolves_into`
-- `next_step_is`
-
-## Career Relationships
-
-- `helps_with`
-- `applies_to`
-- `requires_skill`
-- `builds_skill`
-- `targets`
-- `improves_chance_of`
-- `demonstrates`
-
-## Venture Relationships
-
-- `funded_by`
-- `serves_customer`
-- `solves_problem`
-- `uses_business_model`
-- `competes_with`
-- `scales_through`
-
-## Course Relationships
-
-- `taught_in`
-- `part_of`
-- `has_assignment`
-- `has_deadline`
-- `teaches`
+- Prefer specific relationships over `RELATED_TO` when the evidence supports them.
+- Keep labels stable across files so graph imports merge cleanly.
+- Add project-specific labels only when existing labels cannot express the relationship.

@@ -1,193 +1,91 @@
 # CompassGraph Entity Types
 
-This file defines the standard entity types used across the CompassGraph knowledge base.
+These entity types are intentionally generic. Keep them broad enough for notes, courses, research, project plans, and team knowledge bases.
 
-## Core Knowledge Entities
-
-### Course
-A full academic or learning course.
+## Source
+A document, course, book, article, meeting note, or other knowledge source.
 
 Examples:
-- ETP3211 / TR3002 New Venture Creation
-- Machine Learning
-- Corporate Finance
+- Sample GraphRAG Basics
+- Research Notes
+- Project Requirements
 
-### Session
-A specific lecture, class, workshop, or module inside a course.
-
-Examples:
-- Human Side of Entrepreneurship
-- New Venture Financing
-- Developing a Winning Business Model
-
-### Concept
-A key idea, principle, or term.
+## Concept
+A key idea, principle, term, or topic.
 
 Examples:
-- Entrepreneurship
-- Product-Market Fit
-- Beachhead Market
-- Business Model-Market Fit
+- Knowledge Graph
+- Semantic Search
+- Evaluation
 
-### Framework
-A reusable decision-making or analytical structure.
-
-Examples:
-- Magic Chain of Validation
-- 3R Framework
-- Value Proposition Canvas
-- Business Model Canvas
-
-### CaseStudy
-A company, founder, or scenario used as an example.
+## Framework
+A reusable structure for thinking, deciding, or analyzing.
 
 Examples:
-- Apple
-- Zipcar
-- d.light
+- Retrieval-Augmented Generation
+- Experiment Design
+- Decision Matrix
 
-### Assignment
-A course task or deliverable.
-
-Examples:
-- Business Plan Proposal
-- Internship Reflection Report
-- Final Business Plan Presentation
-
----
-
-## Career and Goal Entities
-
-### CareerGoal
-A long-term or short-term career objective.
+## Method
+A process, technique, algorithm, or workflow.
 
 Examples:
-- Become an investor
-- Enter venture capital
-- Get a product strategy role
-- Build a startup
+- Chunking
+- Entity Extraction
+- Graph Traversal
 
-### Company
-A company the user may research, apply to, invest in, or compare.
-
-Examples:
-- Revolut
-- Stripe
-- OpenAI
-- Antler
-
-### JobRole
-A role, internship, or career position.
+## Formula
+A mathematical expression or symbolic rule.
 
 Examples:
-- Product Manager
-- Strategy Intern
-- Business Operations Analyst
-- Venture Capital Analyst
+- Precision
+- Recall
+- Similarity Score
 
-### Skill
+## CaseStudy
+A concrete example, scenario, project, or incident.
+
+Examples:
+- Sample Search Workflow
+- Failed Retrieval Example
+- Product Research Case
+
+## Skill
 A capability that can be developed or demonstrated.
 
 Examples:
-- Customer discovery
-- Market sizing
-- SQL
-- Financial modeling
-- Fundraising analysis
+- Prompt Design
+- Data Modeling
+- Evaluation Planning
 
-### ProofOfWork
-A project, portfolio item, memo, dashboard, prototype, or artifact that demonstrates ability.
+## ProjectIdea
+A project, artifact, prototype, dashboard, report, or demo.
 
 Examples:
-- Market map
-- Investment memo
-- Startup pitch deck
-- Product analytics dashboard
+- Local GraphRAG Workspace
+- Knowledge Review Dashboard
+- Source Quality Audit
 
----
-
-## Venture and Business Entities
-
-### CustomerSegment
-A specific group of customers or users.
+## Goal
+A desired outcome or objective.
 
 Examples:
-- SMEs
-- University students
-- Early-stage founders
-- Hiring managers
+- Improve Retrieval Quality
+- Build a Reproducible Knowledge Base
+- Reduce Duplicate Notes
 
-### Problem
-A pain, gain, unmet need, or opportunity.
-
-Examples:
-- Lack of customer validation
-- Poor fundraising readiness
-- Inefficient job application process
-
-### Solution
-A product, service, process, or intervention that solves a problem.
+## Risk
+A source of uncertainty, downside, or failure.
 
 Examples:
-- MVP
-- Career strategy dashboard
-- Investor-readiness checklist
+- Stale Source Data
+- Hallucinated Links
+- Weak Evaluation
 
-### BusinessModel
-A logic for creating, delivering, and capturing value.
-
-Examples:
-- Subscription
-- Marketplace
-- SaaS
-- Freemium
-
-### FundingSource
-A source of capital.
+## DecisionCriterion
+A criterion used to compare options or judge quality.
 
 Examples:
-- Bootstrapping
-- Angel Investor
-- Venture Capital
-- Corporate Venture Capital
-- Government Grant
-
-### InvestorType
-A type of investor or capital provider.
-
-Examples:
-- Angel Investor
-- VC
-- CVC
-- Impact Investor
-
----
-
-## Decision Entities
-
-### Decision
-A choice the user or a startup needs to make.
-
-Examples:
-- Whether to raise capital
-- Which company to target
-- Whether to scale
-- Which role to apply for
-
-### Risk
-Something that can reduce the chance of success.
-
-Examples:
-- Market-solution mismatch
-- Co-founder conflict
-- Weak distribution
-- Lack of proof-of-work
-
-### NextAction
-A concrete next step.
-
-Examples:
-- Interview 10 customers
-- Message 5 alumni
-- Build a market map
-- Rewrite resume for product strategy roles
+- Evidence Strength
+- Maintainability
+- Retrieval Precision

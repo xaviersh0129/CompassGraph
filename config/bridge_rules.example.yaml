@@ -1,0 +1,42 @@
+bridge_rules:
+  - keywords:
+      - graph
+      - knowledge graph
+      - relationship
+      - entity
+    targets:
+      - name: Knowledge Graph Design
+        type: Framework
+        relation: SUPPORTS
+      - name: Connected Knowledge Base
+        type: Goal
+        relation: SUPPORTS
+    reason: "Graph concepts can strengthen the structure and navigation of a connected knowledge base."
+
+  - keywords:
+      - retrieval
+      - embedding
+      - semantic search
+      - vector
+    targets:
+      - name: Retrieval Quality
+        type: DecisionCriterion
+        relation: SUPPORTS
+      - name: Semantic Search
+        type: Method
+        relation: APPLIES_TO
+    reason: "Retrieval and embedding concepts can improve how notes are found and reused."
+
+  - keywords:
+      - evaluation
+      - metric
+      - benchmark
+      - test
+    targets:
+      - name: Evaluation Plan
+        type: Framework
+        relation: SUPPORTS
+      - name: Quality Assurance
+        type: Goal
+        relation: SUPPORTS
+    reason: "Evaluation concepts help make the knowledge system measurable and trustworthy."

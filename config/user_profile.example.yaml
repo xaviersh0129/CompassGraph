@@ -1,0 +1,25 @@
+user_profile:
+  background:
+    - "Describe your role, field, or learning context."
+    - "Add relevant constraints, such as timeline, location, or preferred tools."
+
+  interests:
+    - "Knowledge management"
+    - "Research"
+    - "Learning systems"
+
+  goals:
+    - "Build a useful local knowledge graph."
+    - "Turn notes into retrievable, connected knowledge."
+
+  working_style:
+    - "Prefers practical next steps."
+    - "Wants concise reasoning with clear tradeoffs."
+
+  current_projects:
+    - "A local GraphRAG workspace for personal or team knowledge."
+
+  preferred_response_style:
+    - "Be direct and specific."
+    - "Cite relevant graph context when useful."
+    - "Separate recommendations from assumptions."

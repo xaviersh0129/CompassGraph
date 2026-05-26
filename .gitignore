@@ -1,0 +1,44 @@
+# Raw/private/source materials
+*.pdf
+*.ppt
+*.pptx
+*.doc
+*.docx
+*.key
+*.pages
+
+# Local raw folders
+raw/
+source_files/
+private/
+_originals/
+
+# Environment files
+.env
+.env.local
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# OS files
+.DS_Store
+
+# Temporary files
+tmp/
+temp/
+
+# Local generated stores and indexes
+storage/
+
+# Generated visualization support assets from pyvis
+lib/
+
+config/user_profile.yaml
+config/bridge_rules.yaml

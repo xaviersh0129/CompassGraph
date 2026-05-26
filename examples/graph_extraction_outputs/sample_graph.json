@@ -1,0 +1,102 @@
+{
+  "document_id": "sample_graph_rag_basics",
+  "document_title": "Sample GraphRAG Basics",
+  "nodes": [
+    {
+      "name": "Sample GraphRAG Basics",
+      "type": "Source",
+      "description": "A public sample source about building a local GraphRAG workspace."
+    },
+    {
+      "name": "GraphRAG",
+      "type": "Framework",
+      "description": "A retrieval approach that combines a knowledge graph with retrieved text context."
+    },
+    {
+      "name": "Knowledge Graph",
+      "type": "Concept",
+      "description": "A graph of entities and relationships extracted from knowledge sources."
+    },
+    {
+      "name": "Semantic Search",
+      "type": "Method",
+      "description": "Embedding-based search that retrieves related text by meaning."
+    },
+    {
+      "name": "Entity Extraction",
+      "type": "Method",
+      "description": "The process of identifying important entities from source material."
+    },
+    {
+      "name": "Relationship Extraction",
+      "type": "Method",
+      "description": "The process of converting source evidence into graph edges."
+    },
+    {
+      "name": "Retrieval Quality",
+      "type": "DecisionCriterion",
+      "description": "A criterion for judging whether retrieved context is useful and grounded."
+    },
+    {
+      "name": "Evaluation Plan",
+      "type": "Framework",
+      "description": "A repeatable plan for testing graph and retrieval quality."
+    }
+  ],
+  "edges": [
+    {
+      "source": "Sample GraphRAG Basics",
+      "source_type": "Source",
+      "relation": "TEACHES",
+      "target": "Knowledge Graph",
+      "target_type": "Concept",
+      "evidence": "The sample introduces entities and relationships as the graph layer.",
+      "confidence": 0.9
+    },
+    {
+      "source": "Sample GraphRAG Basics",
+      "source_type": "Source",
+      "relation": "TEACHES",
+      "target": "Semantic Search",
+      "target_type": "Method",
+      "evidence": "The sample explains that embeddings can retrieve related notes even when wording differs.",
+      "confidence": 0.9
+    },
+    {
+      "source": "Semantic Search",
+      "source_type": "Method",
+      "relation": "SUPPORTS",
+      "target": "Retrieval Quality",
+      "target_type": "DecisionCriterion",
+      "evidence": "Semantic search can improve retrieval when exact keywords do not match.",
+      "confidence": 0.85
+    },
+    {
+      "source": "Entity Extraction",
+      "source_type": "Method",
+      "relation": "PART_OF",
+      "target": "GraphRAG",
+      "target_type": "Framework",
+      "evidence": "Entity extraction creates the graph nodes used by GraphRAG.",
+      "confidence": 0.86
+    },
+    {
+      "source": "Relationship Extraction",
+      "source_type": "Method",
+      "relation": "PART_OF",
+      "target": "GraphRAG",
+      "target_type": "Framework",
+      "evidence": "Relationship extraction creates the graph edges used by GraphRAG.",
+      "confidence": 0.86
+    },
+    {
+      "source": "Evaluation Plan",
+      "source_type": "Framework",
+      "relation": "SUPPORTS",
+      "target": "Retrieval Quality",
+      "target_type": "DecisionCriterion",
+      "evidence": "Evaluation makes retrieval quality measurable and easier to improve.",
+      "confidence": 0.84
+    }
+  ]
+}

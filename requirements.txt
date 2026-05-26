@@ -1,4 +1,6 @@
-zep-cloud
 python-dotenv
 PyYAML
 openai
+chromadb
+sentence-transformers
+scikit-learn
