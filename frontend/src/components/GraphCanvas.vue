@@ -141,6 +141,7 @@ function edgeWidth(edge) {
 }
 
 function nodeRadius(node) {
+  if (node.isUser) return 28
   return Math.max(8, Math.min(24, 8 + Math.sqrt(node.degree || 1) * 2.4))
 }
 
@@ -179,6 +180,17 @@ function renderGraph() {
   const bounds = containerRef.value.getBoundingClientRect()
   const width = Math.max(640, bounds.width)
   const height = Math.max(480, bounds.height)
+  const centerNodeId = props.graph?.stats?.centerNode || ''
+
+  nodes.forEach((item) => {
+    item.isPinnedCenter = item.id === centerNodeId
+    if (item.isPinnedCenter) {
+      item.x = width / 2
+      item.y = height / 2
+      item.fx = width / 2
+      item.fy = height / 2
+    }
+  })
 
   const svg = d3.select(svgRef.value)
   svg.attr('viewBox', [0, 0, width, height]).attr('role', 'img')
@@ -247,15 +259,25 @@ function renderGraph() {
     .attr('display', showEdgeLabels.value ? null : 'none')
     .text((edge) => edge.relation)
 
+  const userHalos = nodeLayer
+    .selectAll('circle.user-halo')
+    .data(nodes.filter((item) => item.isUser), (item) => item.id)
+    .join('circle')
+    .attr('class', 'user-halo')
+    .attr('r', (item) => nodeRadius(item) + 10)
+    .attr('fill', 'none')
+    .attr('stroke', (item) => item.color)
+
   const node = nodeLayer
-    .selectAll('circle')
+    .selectAll('circle.graph-node')
     .data(nodes, (item) => item.id)
     .join('circle')
+    .attr('class', (item) => `graph-node${item.isUser ? ' user-node' : ''}`)
     .attr('r', nodeRadius)
     .attr('fill', (item) => item.color)
-    .attr('stroke', '#d8f7ff')
-    .attr('stroke-opacity', 0.72)
-    .attr('stroke-width', 1.3)
+    .attr('stroke', (item) => item.isUser ? '#7df9ff' : '#d8f7ff')
+    .attr('stroke-opacity', (item) => item.isUser ? 1 : 0.72)
+    .attr('stroke-width', (item) => item.isUser ? 3 : 1.3)
     .attr('filter', 'url(#node-glow)')
     .on('mouseenter', function (event, item) {
       d3.select(this).attr('r', nodeRadius(item) + 3).attr('stroke-width', 2.4)
@@ -273,8 +295,10 @@ function renderGraph() {
         )
     })
     .on('mouseleave', function (event, item) {
-      d3.select(this).attr('r', nodeRadius(item)).attr('stroke-width', 1.3)
-      labels.attr('display', showNodeLabels.value ? null : 'none')
+      d3.select(this)
+        .attr('r', nodeRadius(item))
+        .attr('stroke-width', item.isUser ? 3 : 1.3)
+      labels.attr('display', (label) => showNodeLabels.value || label.isUser ? null : 'none')
       links.attr('stroke', '#536476').attr('stroke-opacity', 0.5)
     })
     .on('click', (event, item) => {
@@ -293,8 +317,8 @@ function renderGraph() {
     .selectAll('text.node-label')
     .data(nodes, (item) => item.id)
     .join('text')
-    .attr('class', 'node-label')
-    .attr('display', showNodeLabels.value ? null : 'none')
+    .attr('class', (item) => `node-label${item.isUser ? ' user-label' : ''}`)
+    .attr('display', (item) => showNodeLabels.value || item.isUser ? null : 'none')
     .text((item) => item.label)
 
   svg.on('click', () => emit('select', null))
@@ -321,8 +345,10 @@ function renderGraph() {
 
       node.attr('cx', (item) => item.x).attr('cy', (item) => item.y)
 
+      userHalos.attr('cx', (item) => item.x).attr('cy', (item) => item.y)
+
       labels
-        .attr('x', (item) => item.x + 13)
+        .attr('x', (item) => item.x + nodeRadius(item) + 7)
         .attr('y', (item) => item.y + 4)
 
       edgeLabels
@@ -332,17 +358,28 @@ function renderGraph() {
 
   function dragStarted(event) {
     if (!event.active) simulation.alphaTarget(0.3).restart()
+    if (event.subject.isPinnedCenter) return
     event.subject.fx = event.subject.x
     event.subject.fy = event.subject.y
   }
 
   function dragged(event) {
+    if (event.subject.isPinnedCenter) {
+      event.subject.fx = width / 2
+      event.subject.fy = height / 2
+      return
+    }
     event.subject.fx = event.x
     event.subject.fy = event.y
   }
 
   function dragEnded(event) {
     if (!event.active) simulation.alphaTarget(0)
+    if (event.subject.isPinnedCenter) {
+      event.subject.fx = width / 2
+      event.subject.fy = height / 2
+      return
+    }
     event.subject.fx = null
     event.subject.fy = null
   }
@@ -376,7 +413,9 @@ watch(
 )
 
 watch(showNodeLabels, () => {
-  d3.select(svgRef.value).selectAll('.node-label').attr('display', showNodeLabels.value ? null : 'none')
+  d3.select(svgRef.value)
+    .selectAll('.node-label')
+    .attr('display', (item) => showNodeLabels.value || item.isUser ? null : 'none')
 })
 
 watch(showEdgeLabels, () => {

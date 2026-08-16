@@ -117,6 +117,8 @@ storage/graph_nodes.jsonl
 storage/graph_edges.jsonl
 ```
 
+If `config/user_profile.yaml` exists, this import also creates one private **User** node and connects it to the roles, interests, skills, projects, priorities, organizations, and decision criteria in the profile. The User node appears at the center when you open the default graph.
+
 ### Step 5: Start The Local API
 
 In the same terminal, run:
@@ -480,11 +482,19 @@ Open `config/user_profile.yaml` in a text editor and replace the example values 
 
 Every section and field is optional. Delete placeholders and entire sections that do not apply instead of leaving example values in the file. Noema preserves the nested YAML structure when it gives the profile to the LLM, so you can also add your own sections.
 
+After creating or editing the profile, rebuild the stored graph:
+
+```bash
+python local_rag/import_reviewed_graph.py
+```
+
+Refresh the web app. Your preferred name, or your full name when no preferred name is set, becomes the central **User** node. Noema creates private links for useful graph context while intentionally leaving sensitive administrative details such as location, nationality, grades, and dates out of the visualization. The complete profile can still guide answers.
+
 This private file is ignored by Git. Its contents may still be sent to the model selected in the web app or configured in `.env` whenever you use **Ask Noema**, so include only information you are comfortable sharing with that provider. The public `user_profile.example.yaml` contains neutral placeholders and is safe to publish.
 
 ## Export A Public Showcase
 
-The showcase is a static website. It does not need the local API, Chroma, `.env`, or an AI key after export.
+The showcase is a static website. It does not need the local API, Chroma, `.env`, or an AI key after export. Private profile-only nodes, the User node, and profile relationships are excluded automatically.
 
 Open the panel and click **Export public graph**, or run:
 

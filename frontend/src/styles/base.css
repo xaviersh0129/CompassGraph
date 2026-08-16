@@ -540,6 +540,23 @@ textarea:focus {
   stroke-width: 4px;
 }
 
+.user-halo {
+  pointer-events: none;
+  stroke-dasharray: 5 7;
+  stroke-opacity: 0.48;
+  stroke-width: 1.5px;
+  vector-effect: non-scaling-stroke;
+}
+
+.user-node {
+  cursor: pointer;
+}
+
+.user-label {
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .edge-label {
   pointer-events: none;
   font-size: 9px;
@@ -1831,6 +1848,11 @@ textarea:focus,
   fill: #dce6ed;
   stroke: #090c10;
   stroke-width: 5px;
+}
+
+.user-label {
+  fill: #effcff;
+  filter: drop-shadow(0 0 6px rgba(125, 249, 255, 0.58));
 }
 
 .edge-label {

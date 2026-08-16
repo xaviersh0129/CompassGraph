@@ -5,6 +5,11 @@ description: >
   documents, courses, research, project plans, and reusable knowledge sources.
 
 node_types:
+  User:
+    description: The owner of the private second-brain graph and the center of personalized relationships.
+    examples:
+      - You
+
   Source:
     description: A document, course, book, article, note, meeting, or dataset.
     examples:
@@ -83,6 +88,70 @@ node_types:
       - Retrieval Precision
 
 edge_types:
+  TARGETS:
+    description: The user is actively considering or aiming for a role.
+    example: You -> TARGETS -> Product Manager
+
+  PURSUES:
+    description: The user is working toward a longer-term goal.
+    example: You -> PURSUES -> Build Domain Expertise
+
+  INTERESTED_IN:
+    description: The user has an active interest in a domain or concept.
+    example: You -> INTERESTED_IN -> Knowledge Graphs
+
+  DEMONSTRATES:
+    description: The user has evidence or experience supporting a skill or strength.
+    example: You -> DEMONSTRATES -> Data Modeling
+
+  HAS_SKILL:
+    description: The user names a technical or practical skill in their profile.
+    example: You -> HAS_SKILL -> Python
+
+  PRIORITIZES:
+    description: The user identifies an outcome as a current priority.
+    example: You -> PRIORITIZES -> Build Stronger Evidence
+
+  DEVELOPING:
+    description: The user is actively developing a capability or closing an evidence gap.
+    example: You -> DEVELOPING -> Product Discovery
+
+  VALUES:
+    description: The user wants decisions to optimize for a criterion.
+    example: You -> VALUES -> Meaningful Ownership
+
+  DEPRIORITIZES:
+    description: The user does not want decisions to overweight a criterion.
+    example: You -> DEPRIORITIZES -> Prestige Alone
+
+  WORKED_AT:
+    description: The user has work experience at an organization.
+    example: You -> WORKED_AT -> Example Company
+
+  HELD_ROLE:
+    description: The user has held a role in their work history.
+    example: You -> HELD_ROLE -> Data Analyst
+
+  ROLE_AT:
+    description: A role was held at a particular organization.
+    example: Data Analyst -> ROLE_AT -> Example Company
+
+  STUDIED_AT:
+    description: The user studied at an educational organization.
+    example: You -> STUDIED_AT -> Example University
+
+  STUDIED:
+    description: The user studied a subject, qualification, or course.
+    example: You -> STUDIED -> Information Systems
+
+  BUILT:
+    description: The user built or contributed to a project.
+    example: You -> BUILT -> Local GraphRAG Workspace
+
+  PREFERS:
+    description: The user has stated a work or learning preference.
+    example: You -> PREFERS -> Learning Through Projects
+
   TEACHES:
     description: A source teaches a concept, framework, method, or skill.
     example: Sample GraphRAG Basics -> TEACHES -> Knowledge Graph

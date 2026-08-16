@@ -1,6 +1,7 @@
 import argparse
 import html
 import json
+import re
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
@@ -16,6 +17,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 GRAPH_NODES_PATH = PROJECT_ROOT / "storage/graph_nodes.jsonl"
 GRAPH_EDGES_PATH = PROJECT_ROOT / "storage/graph_edges.jsonl"
 DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "showcase"
+PRIVATE_PROFILE_DOCUMENT = "User Profile"
+PRIVATE_PROFILE_DOCUMENT_ID = "user_profile"
 
 
 def read_jsonl(path: Path) -> List[Dict[str, Any]]:
@@ -45,6 +48,36 @@ def display_path(path: Path) -> str:
         return str(path)
 
 
+def without_private_profile(values: Any) -> List[str]:
+    return [
+        str(value)
+        for value in values or []
+        if str(value) not in {PRIVATE_PROFILE_DOCUMENT, PRIVATE_PROFILE_DOCUMENT_ID}
+        and not str(value).endswith("config/user_profile.yaml")
+    ]
+
+
+def sanitize_public_node(node: Dict[str, Any]) -> Dict[str, Any]:
+    sanitized = dict(node)
+    sanitized["documents"] = without_private_profile(node.get("documents", []))
+    sanitized["document_ids"] = without_private_profile(node.get("document_ids", []))
+    sanitized["source_files"] = without_private_profile(node.get("source_files", []))
+    return sanitized
+
+
+def sanitize_public_edge(edge: Dict[str, Any]) -> Dict[str, Any]:
+    sanitized = dict(edge)
+    sanitized["documents"] = without_private_profile(edge.get("documents", []))
+    sanitized["document_ids"] = without_private_profile(edge.get("document_ids", []))
+    sanitized["source_files"] = without_private_profile(edge.get("source_files", []))
+    sanitized["evidence"] = re.sub(
+        r"(?:\s*\|\s*)?Declared in the private user profile under [^.]+\.",
+        "",
+        str(edge.get("evidence", "")),
+    ).strip()
+    return sanitized
+
+
 def build_showcase_payload(
     title: str,
     subtitle: str,
@@ -52,15 +85,33 @@ def build_showcase_payload(
     public_url: str,
     max_nodes: int,
 ) -> Dict[str, Any]:
-    raw_nodes = read_jsonl(GRAPH_NODES_PATH)
-    raw_edges = read_jsonl(GRAPH_EDGES_PATH)
+    stored_nodes = read_jsonl(GRAPH_NODES_PATH)
+    stored_edges = read_jsonl(GRAPH_EDGES_PATH)
+    raw_nodes = [sanitize_public_node(node) for node in stored_nodes if not node.get("private", False)]
+    public_node_ids = {node.get("node_id") for node in raw_nodes}
+    raw_edges = [
+        sanitize_public_edge(edge)
+        for edge in stored_edges
+        if not edge.get("private", False)
+        and edge.get("source_id") in public_node_ids
+        and edge.get("target_id") in public_node_ids
+    ]
 
     if not raw_nodes or not raw_edges:
-        raise ValueError("Missing graph_nodes.jsonl or graph_edges.jsonl. Run import_reviewed_graph.py first.")
+        raise ValueError("No public graph data is available. Import knowledge files before exporting a showcase.")
+
+    public_degree = Counter()
+    public_in_degree = Counter()
+    public_out_degree = Counter()
+    for edge in raw_edges:
+        public_degree[edge.get("source_id")] += 1
+        public_degree[edge.get("target_id")] += 1
+        public_out_degree[edge.get("source_id")] += 1
+        public_in_degree[edge.get("target_id")] += 1
 
     selected_nodes = sorted(
         raw_nodes,
-        key=lambda node: (int(node.get("degree", 0) or 0), str(node.get("name", ""))),
+        key=lambda node: (public_degree[node.get("node_id")], str(node.get("name", ""))),
         reverse=True,
     )[:max_nodes]
     selected_ids = {node.get("node_id") for node in selected_nodes}
@@ -108,9 +159,9 @@ def build_showcase_payload(
                 "color": category_for_type(node.get("type", "Unknown"))["color"],
                 "description": compact_text(node.get("description", ""), 520),
                 "documents": node.get("documents", []) or [],
-                "degree": int(node.get("degree", 0) or 0),
-                "inDegree": int(node.get("in_degree", 0) or 0),
-                "outDegree": int(node.get("out_degree", 0) or 0),
+                "degree": public_degree[node.get("node_id")],
+                "inDegree": public_in_degree[node.get("node_id")],
+                "outDegree": public_out_degree[node.get("node_id")],
             }
             for node in selected_nodes
         ],

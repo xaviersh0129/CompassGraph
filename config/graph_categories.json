@@ -1,6 +1,11 @@
 {
   "categories": [
     {
+      "name": "Self",
+      "color": "#effcff",
+      "types": ["User"]
+    },
+    {
       "name": "Knowledge",
       "color": "#39d9ff",
       "types": ["Concept", "Formula"]

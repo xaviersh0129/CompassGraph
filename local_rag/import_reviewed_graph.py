@@ -6,6 +6,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
+try:
+    from local_rag.profile_graph import build_profile_graph
+except ModuleNotFoundError:
+    from profile_graph import build_profile_graph
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_INPUT_DIR = PROJECT_ROOT / "storage/graph_extraction_outputs"
@@ -60,6 +65,8 @@ def normalize_node_type(value: Any) -> str:
         "decisioncriterion": "DecisionCriterion",
         "decision_criterion": "DecisionCriterion",
         "decision criterion": "DecisionCriterion",
+        "user": "User",
+        "person": "User",
     }
 
     key = value.lower().replace("-", "_")
@@ -248,6 +255,12 @@ def merge_nodes(nodes: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         existing["documents"] = merge_list_values(existing.get("documents", []), node.get("documents", []))
         existing["document_ids"] = merge_list_values(existing.get("document_ids", []), node.get("document_ids", []))
         existing["source_files"] = merge_list_values(existing.get("source_files", []), node.get("source_files", []))
+        existing["profile_sections"] = merge_list_values(existing.get("profile_sections", []), node.get("profile_sections", []))
+        existing["private"] = bool(existing.get("private", False) and node.get("private", False))
+        existing["is_user"] = bool(existing.get("is_user", False) or node.get("is_user", False))
+        existing["is_profile_derived"] = bool(
+            existing.get("is_profile_derived", False) or node.get("is_profile_derived", False)
+        )
         existing["updated_at"] = datetime.now().isoformat()
 
     return sorted(merged.values(), key=lambda x: (x["type"], x["name"]))
@@ -264,6 +277,19 @@ def merge_edges(edges: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             continue
 
         existing = merged[edge_id]
+        existing_private = bool(existing.get("private", False))
+        edge_private = bool(edge.get("private", False))
+
+        # A public relationship may overlap a profile-derived relationship. Keep
+        # the public evidence clean while the direct User links retain the private context.
+        if existing_private != edge_private:
+            if existing_private:
+                replacement = dict(edge)
+                replacement["is_profile_derived"] = True
+                merged[edge_id] = replacement
+            else:
+                existing["is_profile_derived"] = True
+            continue
 
         if edge.get("confidence", 0) > existing.get("confidence", 0):
             existing["confidence"] = edge["confidence"]
@@ -277,6 +303,11 @@ def merge_edges(edges: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         existing["documents"] = merge_list_values(existing.get("documents", []), edge.get("documents", []))
         existing["document_ids"] = merge_list_values(existing.get("document_ids", []), edge.get("document_ids", []))
         existing["source_files"] = merge_list_values(existing.get("source_files", []), edge.get("source_files", []))
+        existing["profile_sections"] = merge_list_values(existing.get("profile_sections", []), edge.get("profile_sections", []))
+        existing["private"] = bool(existing.get("private", False) and edge.get("private", False))
+        existing["is_profile_derived"] = bool(
+            existing.get("is_profile_derived", False) or edge.get("is_profile_derived", False)
+        )
         existing["updated_at"] = datetime.now().isoformat()
 
     return sorted(merged.values(), key=lambda x: (x["source"], x["relation"], x["target"]))
@@ -307,6 +338,9 @@ def add_missing_endpoint_nodes(
                 "documents": edge.get("documents", []),
                 "document_ids": edge.get("document_ids", []),
                 "source_files": edge.get("source_files", []),
+                "profile_sections": edge.get("profile_sections", []),
+                "private": bool(edge.get("private", False)),
+                "is_profile_derived": bool(edge.get("is_profile_derived", False)),
                 "created_at": now,
                 "updated_at": now,
             }
@@ -425,6 +459,12 @@ def main() -> None:
 
         all_nodes.extend(file_nodes)
         all_edges.extend(file_edges)
+
+    profile_nodes, profile_edges = build_profile_graph()
+    if profile_nodes:
+        print(f"- config/user_profile.yaml (private profile graph: nodes={len(profile_nodes)}, edges={len(profile_edges)})")
+        all_nodes.extend(profile_nodes)
+        all_edges.extend(profile_edges)
 
     if skipped_files:
         print("\nSkipped suggested/unreviewed files:")

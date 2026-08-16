@@ -246,6 +246,12 @@ def load_graph_payload(params: dict[str, list[str]]) -> dict[str, Any]:
 
     selected_node_ids = set(nodes_by_id)
     focused_edge_ids = set()
+    is_default_view = not any((node_types, node_categories, relations, query, focus_node))
+    user_node_ids = [
+        node_id
+        for node_id, node in nodes_by_id.items()
+        if node.get("is_user", False) or str(node.get("type", "")).lower() == "user"
+    ]
 
     if focus_node:
         selected_node_ids = {focus_node} if focus_node in nodes_by_id else set()
@@ -331,13 +337,17 @@ def load_graph_payload(params: dict[str, list[str]]) -> dict[str, Any]:
         selected_node_ids = {node_id for node_id in context_ids if node_id in nodes_by_id}
 
     if not focus_node and len(selected_node_ids) > max_nodes:
-        selected_node_ids = set(
-            sorted(
-                selected_node_ids,
-                key=lambda node_id: nodes_by_id[node_id].get("degree", 0),
-                reverse=True,
-            )[:max_nodes]
-        )
+        ranked_node_ids = sorted(
+            selected_node_ids,
+            key=lambda node_id: nodes_by_id[node_id].get("degree", 0),
+            reverse=True,
+        )[:max_nodes]
+        if is_default_view and user_node_ids and user_node_ids[0] not in ranked_node_ids:
+            if ranked_node_ids:
+                ranked_node_ids[-1] = user_node_ids[0]
+            else:
+                ranked_node_ids = [user_node_ids[0]]
+        selected_node_ids = set(ranked_node_ids)
 
     edges = []
     for edge in raw_edges:
@@ -382,6 +392,7 @@ def load_graph_payload(params: dict[str, list[str]]) -> dict[str, Any]:
                 "degree": node_degree(node_id),
                 "inDegree": node.get("in_degree", 0),
                 "outDegree": node.get("out_degree", 0),
+                "isUser": bool(node.get("is_user", False) or str(node.get("type", "")).lower() == "user"),
             }
         )
 
@@ -430,6 +441,7 @@ def load_graph_payload(params: dict[str, list[str]]) -> dict[str, Any]:
             "availableRelations": sorted(available_relation_counts.items(), key=lambda item: (-item[1], item[0])),
             "topConnectedNodes": top_connected_nodes,
             "focusNode": focus_node or None,
+            "centerNode": focus_node or (user_node_ids[0] if is_default_view and user_node_ids else None),
         },
     }
 
