@@ -84,10 +84,12 @@
         :loading="graphLoading"
         :can-reset="hasActiveGraphView"
         :mode-label="activeViewLabel"
+        :active-category="focusedNodeId ? '' : filters.nodeCategory"
         :search-query="nodeSearchQuery"
         :search-results="nodeSearchResults"
         :search-loading="nodeSearchLoading"
         @select="handleGraphSelect"
+        @select-ranked-node="selectRankedNode"
         @filter-category="filterByCategory"
         @reset-view="resetGraphView"
         @search="runNodeSearch"
@@ -325,6 +327,10 @@ function handleGraphSelect(selection) {
   selected.value = selection
   focusedNodeId.value = selection.data.id
   loadGraph({ focusNodeId: selection.data.id })
+}
+
+function selectRankedNode(node) {
+  handleGraphSelect({ kind: 'node', data: node })
 }
 
 function compactActionText(output) {

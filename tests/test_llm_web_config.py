@@ -34,6 +34,27 @@ class WebLlmConfigTests(unittest.TestCase):
         self.assertEqual({node["category"] for node in payload["nodes"]}, {"Direction"})
         self.assertEqual(payload["stats"]["nodeCategories"], [["Direction", 3]])
 
+    @patch("local_rag.api_server.read_jsonl")
+    def test_graph_ranks_most_connected_nodes_within_selected_category(self, read_jsonl_mock) -> None:
+        read_jsonl_mock.side_effect = [
+            [
+                {"node_id": "role", "name": "Product Lead", "type": "Role"},
+                {"node_id": "goal", "name": "Build Expertise", "type": "Goal"},
+                {"node_id": "concept", "name": "Popular Concept", "type": "Concept"},
+            ],
+            [
+                *[{"source_id": "role", "target_id": "concept"} for _ in range(8)],
+                *[{"source_id": "goal", "target_id": "concept"} for _ in range(3)],
+            ],
+        ]
+
+        payload = load_graph_payload({"node_categories": ["Direction"], "max_nodes": ["250"]})
+
+        ranked = payload["stats"]["topConnectedNodes"]
+        self.assertEqual([node["id"] for node in ranked], ["role", "goal"])
+        self.assertEqual(ranked[0]["degree"], 8)
+        self.assertEqual({node["category"] for node in ranked}, {"Direction"})
+
     @patch.dict(
         "os.environ",
         {

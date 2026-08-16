@@ -197,6 +197,53 @@ def load_graph_payload(params: dict[str, list[str]]) -> dict[str, Any]:
     focus_node = get_query(params, "focus_node").strip()
 
     nodes_by_id = {node.get("node_id"): node for node in raw_nodes if node.get("node_id")}
+    raw_edge_degree: dict[str, int] = {}
+    for edge in raw_edges:
+        source_id = edge.get("source_id")
+        target_id = edge.get("target_id")
+        if source_id in nodes_by_id:
+            raw_edge_degree[source_id] = raw_edge_degree.get(source_id, 0) + 1
+        if target_id in nodes_by_id:
+            raw_edge_degree[target_id] = raw_edge_degree.get(target_id, 0) + 1
+
+    def node_degree(node_id: str) -> int:
+        return raw_edge_degree.get(node_id, 0)
+
+    ranking_nodes = raw_nodes
+    if node_categories:
+        ranking_nodes = [
+            node
+            for node in ranking_nodes
+            if category_for_type(node.get("type", "Unknown"))["name"] in node_categories
+        ]
+
+    top_connected_nodes = []
+    for ranked_node in sorted(
+        ranking_nodes,
+        key=lambda node: (
+            -node_degree(str(node.get("node_id", ""))),
+            str(node.get("name", "")).lower(),
+        ),
+    )[:5]:
+        node_id = str(ranked_node.get("node_id", ""))
+        if not node_id:
+            continue
+        category = category_for_type(ranked_node.get("type", "Unknown"))
+        top_connected_nodes.append(
+            {
+                "id": node_id,
+                "label": ranked_node.get("name", node_id),
+                "type": ranked_node.get("type", "Unknown") or "Unknown",
+                "category": category["name"],
+                "color": category["color"],
+                "description": ranked_node.get("description", ""),
+                "documents": ranked_node.get("documents", []),
+                "degree": node_degree(node_id),
+                "inDegree": ranked_node.get("in_degree", 0),
+                "outDegree": ranked_node.get("out_degree", 0),
+            }
+        )
+
     selected_node_ids = set(nodes_by_id)
     focused_edge_ids = set()
 
@@ -319,11 +366,6 @@ def load_graph_payload(params: dict[str, list[str]]) -> dict[str, Any]:
                 }
             )
 
-    edge_degree: dict[str, int] = {}
-    for edge in edges:
-        edge_degree[edge["source"]] = edge_degree.get(edge["source"], 0) + 1
-        edge_degree[edge["target"]] = edge_degree.get(edge["target"], 0) + 1
-
     nodes = []
     for node_id in selected_node_ids:
         node = nodes_by_id[node_id]
@@ -337,7 +379,7 @@ def load_graph_payload(params: dict[str, list[str]]) -> dict[str, Any]:
                 "color": category["color"],
                 "description": node.get("description", ""),
                 "documents": node.get("documents", []),
-                "degree": node.get("degree", edge_degree.get(node_id, 0)),
+                "degree": node_degree(node_id),
                 "inDegree": node.get("in_degree", 0),
                 "outDegree": node.get("out_degree", 0),
             }
@@ -386,6 +428,7 @@ def load_graph_payload(params: dict[str, list[str]]) -> dict[str, Any]:
             "availableNodeTypes": sorted(available_node_type_counts.items(), key=lambda item: (-item[1], item[0])),
             "availableNodeCategories": ordered_category_counts(available_node_category_counts),
             "availableRelations": sorted(available_relation_counts.items(), key=lambda item: (-item[1], item[0])),
+            "topConnectedNodes": top_connected_nodes,
             "focusNode": focus_node or None,
         },
     }

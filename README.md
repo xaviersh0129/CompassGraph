@@ -177,6 +177,8 @@ The main graph fills most of the screen.
 
 Click a node to show its direct connections. Click an empty area or use the reset control to return to the full graph.
 
+The category dots are centered below the graph. Select one to filter the graph and see its three most connected nodes, then select a ranked node to explore its direct connections. Link count is a useful sign of how well a topic is integrated into your knowledge graph, but it is not a measure of expertise by itself.
+
 The visualization groups detailed node types into a smaller set of stable categories. Raw types remain visible in node details and are not changed in storage.
 
 | Visual category | Included node types |

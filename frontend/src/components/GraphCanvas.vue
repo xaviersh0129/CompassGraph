@@ -61,6 +61,23 @@
 
     <div ref="containerRef" class="graph-stage">
       <svg ref="svgRef" class="graph-svg" />
+      <div v-if="activeCategory && topConnectedNodes.length" class="top-connected-strip">
+        <span class="top-connected-label">
+          <Network :size="15" />
+          Most connected
+        </span>
+        <button
+          v-for="node in topConnectedNodes"
+          :key="node.id"
+          class="top-connected-node"
+          type="button"
+          :title="`Show ${node.label}'s direct connections`"
+          @click="$emit('select-ranked-node', node)"
+        >
+          <span>{{ node.label }}</span>
+          <strong>{{ node.degree }} links</strong>
+        </button>
+      </div>
       <div v-if="loading" class="graph-state">Loading graph</div>
       <div v-else-if="!graph.nodes.length" class="graph-state">No graph data</div>
     </div>
@@ -89,7 +106,7 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import * as d3 from 'd3'
-import { LoaderCircle, Scan, Search, X } from '@lucide/vue'
+import { LoaderCircle, Network, Scan, Search, X } from '@lucide/vue'
 import {
   GRAPH_CATEGORIES,
   categoryForType,
@@ -102,6 +119,10 @@ const props = defineProps({
     required: true
   },
   canReset: Boolean,
+  activeCategory: {
+    type: String,
+    default: ''
+  },
   modeLabel: {
     type: String,
     default: ''
@@ -120,6 +141,7 @@ const props = defineProps({
 
 const emit = defineEmits([
   'select',
+  'select-ranked-node',
   'filter-category',
   'reset-view',
   'search',
@@ -155,6 +177,8 @@ const legend = computed(() => {
     .filter((category) => counts.has(category.name))
     .map((category) => ({ category: category.name, count: counts.get(category.name) }))
 })
+
+const topConnectedNodes = computed(() => (props.graph?.stats?.topConnectedNodes || []).slice(0, 3))
 
 function edgeWidth(edge) {
   const confidence = Number(edge.confidence || 0.8)
