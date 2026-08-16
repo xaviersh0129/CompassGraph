@@ -47,11 +47,11 @@
         </form>
         <label class="toggle-row">
           <input v-model="showNodeLabels" type="checkbox" />
-          <span>Nodes</span>
+          <span>Labels</span>
         </label>
         <label class="toggle-row">
           <input v-model="showEdgeLabels" type="checkbox" />
-          <span>Edges</span>
+          <span>Relations</span>
         </label>
         <button class="icon-btn" type="button" title="Fit graph" aria-label="Fit graph" @click="fitGraph">
           <Scan :size="18" />
@@ -152,7 +152,7 @@ const emit = defineEmits([
 
 const containerRef = ref(null)
 const svgRef = ref(null)
-const showNodeLabels = ref(true)
+const showNodeLabels = ref(false)
 const showEdgeLabels = ref(false)
 const searchFocused = ref(false)
 
@@ -183,6 +183,14 @@ const topConnectedNodes = computed(() => (props.graph?.stats?.topConnectedNodes 
 function edgeWidth(edge) {
   const confidence = Number(edge.confidence || 0.8)
   return Math.max(1, Math.min(4, confidence * 3))
+}
+
+function nodeRadius(node) {
+  return Math.max(8, Math.min(24, 8 + Math.sqrt(node.degree || 1) * 2.4))
+}
+
+function endpointId(endpoint) {
+  return typeof endpoint === 'object' ? endpoint.id : endpoint
 }
 
 function selectSearchResult(node) {
@@ -240,8 +248,9 @@ function renderGraph() {
 
   svg.call(zoomBehavior)
 
-  svg
-    .append('defs')
+  const defs = svg.append('defs')
+
+  defs
     .append('marker')
     .attr('id', 'arrow')
     .attr('viewBox', '0 -5 10 10')
@@ -252,14 +261,27 @@ function renderGraph() {
     .attr('orient', 'auto')
     .append('path')
     .attr('d', 'M0,-5L10,0L0,5')
-    .attr('fill', '#7f8794')
+    .attr('fill', '#66788a')
+
+  const nodeGlow = defs
+    .append('filter')
+    .attr('id', 'node-glow')
+    .attr('x', '-80%')
+    .attr('y', '-80%')
+    .attr('width', '260%')
+    .attr('height', '260%')
+
+  nodeGlow.append('feGaussianBlur').attr('stdDeviation', 3).attr('result', 'glow')
+  const glowMerge = nodeGlow.append('feMerge')
+  glowMerge.append('feMergeNode').attr('in', 'glow')
+  glowMerge.append('feMergeNode').attr('in', 'SourceGraphic')
 
   const links = linkLayer
     .selectAll('line')
     .data(edges, (edge) => edge.id)
     .join('line')
-    .attr('stroke', '#a5adba')
-    .attr('stroke-opacity', 0.62)
+    .attr('stroke', '#536476')
+    .attr('stroke-opacity', 0.5)
     .attr('stroke-width', edgeWidth)
     .attr('marker-end', 'url(#arrow)')
     .on('click', (event, edge) => {
@@ -279,10 +301,32 @@ function renderGraph() {
     .selectAll('circle')
     .data(nodes, (item) => item.id)
     .join('circle')
-    .attr('r', (item) => Math.max(8, Math.min(24, 8 + Math.sqrt(item.degree || 1) * 2.4)))
+    .attr('r', nodeRadius)
     .attr('fill', (item) => item.color)
-    .attr('stroke', '#ffffff')
-    .attr('stroke-width', 1.8)
+    .attr('stroke', '#d8f7ff')
+    .attr('stroke-opacity', 0.72)
+    .attr('stroke-width', 1.3)
+    .attr('filter', 'url(#node-glow)')
+    .on('mouseenter', function (event, item) {
+      d3.select(this).attr('r', nodeRadius(item) + 3).attr('stroke-width', 2.4)
+      labels.attr('display', (label) =>
+        showNodeLabels.value || label.id === item.id ? null : 'none'
+      )
+      links
+        .attr('stroke', (edge) =>
+          endpointId(edge.source) === item.id || endpointId(edge.target) === item.id
+            ? item.color
+            : '#536476'
+        )
+        .attr('stroke-opacity', (edge) =>
+          endpointId(edge.source) === item.id || endpointId(edge.target) === item.id ? 0.95 : 0.16
+        )
+    })
+    .on('mouseleave', function (event, item) {
+      d3.select(this).attr('r', nodeRadius(item)).attr('stroke-width', 1.3)
+      labels.attr('display', showNodeLabels.value ? null : 'none')
+      links.attr('stroke', '#536476').attr('stroke-opacity', 0.5)
+    })
     .on('click', (event, item) => {
       event.stopPropagation()
       emit('select', { kind: 'node', data: item })

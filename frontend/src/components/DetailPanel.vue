@@ -5,7 +5,9 @@
         <div class="panel-kicker">{{ selected ? selected.kind : 'Selection' }}</div>
         <h2>{{ heading }}</h2>
       </div>
-      <button class="icon-btn" type="button" title="Close" @click="$emit('close')">Close</button>
+      <button class="icon-btn" type="button" title="Close" aria-label="Close details" @click="$emit('close')">
+        <X :size="17" />
+      </button>
     </div>
 
     <template v-if="selected?.kind === 'node'">
@@ -62,6 +64,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { X } from '@lucide/vue'
 
 const props = defineProps({
   selected: Object

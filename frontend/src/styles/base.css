@@ -1,6 +1,25 @@
 :root {
-  color: #171a21;
-  background: #f5f6f7;
+  --void: #07090c;
+  --canvas: #090c10;
+  --surface: #0f1318;
+  --surface-raised: #141a21;
+  --surface-hover: #1a222b;
+  --glass: rgba(13, 17, 22, 0.92);
+  --glass-strong: rgba(16, 21, 27, 0.97);
+  --border: #29323c;
+  --border-strong: #3a4855;
+  --text: #e5edf3;
+  --text-strong: #f6f9fb;
+  --muted: #8795a3;
+  --muted-strong: #b4c0ca;
+  --accent: #63e6c1;
+  --accent-bright: #7df9ff;
+  --accent-soft: rgba(99, 230, 193, 0.12);
+  --danger: #ff7488;
+  --shadow: rgba(0, 0, 0, 0.52);
+  color: var(--text);
+  background: var(--void);
+  color-scheme: dark;
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
@@ -1560,5 +1579,432 @@ textarea:focus {
 @media (max-width: 560px) {
   .brand-block > div:last-child {
     display: none;
+  }
+}
+
+/* Obsidian-inspired dark graph theme */
+body,
+.app-shell,
+.graph-shell {
+  background: var(--void);
+  color: var(--text);
+}
+
+button {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #07100e;
+  font-weight: 750;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--accent-bright);
+  background: var(--accent-bright);
+}
+
+input,
+select,
+textarea {
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--text-strong);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #687683;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+.node-search:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.app-header {
+  border-bottom-color: var(--border);
+  background: rgba(9, 12, 16, 0.96);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+}
+
+.brand-mark {
+  border: 1px solid rgba(125, 249, 255, 0.48);
+  background: #10191b;
+  box-shadow:
+    inset 0 0 16px rgba(125, 249, 255, 0.08),
+    0 0 20px rgba(99, 230, 193, 0.12);
+  color: var(--accent-bright);
+}
+
+.brand-block h1,
+.graph-toolbar h2,
+.detail-header h2,
+.modal-header h2,
+.model-modal-header h2,
+.settings-section h3,
+.model-route-row > strong {
+  color: var(--text-strong);
+}
+
+.brand-block span,
+.panel-kicker,
+.panel-list-heading > span,
+.metric-grid span,
+.node-search-results small,
+.node-search-empty,
+.toggle-row,
+.top-connected-label,
+.legend-chip strong,
+.detail-list dt,
+.ask-response-top,
+.ask-question span,
+.muted-copy,
+.action-toast span,
+.upload-dropzone span,
+.upload-file-row span,
+.settings-section-heading p,
+.model-modal-actions > span {
+  color: var(--muted);
+}
+
+.ghost-btn,
+.icon-btn {
+  border-color: var(--border);
+  background: var(--surface-raised);
+  color: var(--muted-strong);
+}
+
+.ghost-btn:hover:not(:disabled),
+.icon-btn:hover:not(:disabled),
+.node-search-clear:hover:not(:disabled),
+.icon-only-btn:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+  color: var(--text-strong);
+}
+
+.control-panel {
+  border-right-color: var(--border);
+  background: var(--glass-strong);
+  box-shadow: 24px 0 70px var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.document-scroll {
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+.document-scroll::-webkit-scrollbar-thumb,
+.ask-response-body::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  background-clip: padding-box;
+}
+
+.panel-share,
+.detail-panel,
+.knowledge-modal-footer {
+  border-color: var(--border);
+}
+
+.metric-grid {
+  border-color: var(--border);
+  background: var(--border);
+}
+
+.metric-grid div,
+.document-row {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.document-row {
+  border-color: var(--border);
+}
+
+.document-row:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+}
+
+.document-row strong,
+.top-connected-node strong {
+  color: var(--accent);
+}
+
+.graph-toolbar {
+  border-bottom-color: var(--border);
+  background: rgba(10, 13, 17, 0.9);
+  backdrop-filter: blur(14px);
+}
+
+.node-search {
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.node-search input {
+  background: transparent;
+}
+
+.node-search input::-webkit-search-cancel-button {
+  display: none;
+  appearance: none;
+}
+
+.node-search-clear,
+.icon-only-btn,
+.model-settings-trigger,
+.model-summary-btn {
+  background: transparent;
+  color: var(--muted-strong);
+}
+
+.node-search-results {
+  border-color: var(--border);
+  background: var(--glass-strong);
+  box-shadow: 0 18px 46px var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.node-search-results button {
+  color: var(--text);
+}
+
+.node-search-results button:hover {
+  background: var(--surface-hover);
+}
+
+.graph-svg {
+  background:
+    linear-gradient(rgba(125, 249, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(125, 249, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(rgba(255, 255, 255, 0.012) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px),
+    var(--canvas);
+  background-position: 0 0, 0 0, 0 0, 0 0;
+  background-size: 36px 36px, 36px 36px, 144px 144px, 144px 144px;
+}
+
+.graph-svg circle {
+  transition: opacity 140ms ease;
+}
+
+.node-label {
+  fill: #dce6ed;
+  stroke: #090c10;
+  stroke-width: 5px;
+}
+
+.edge-label {
+  fill: #93a5b5;
+  stroke: #090c10;
+  stroke-width: 4px;
+}
+
+.graph-state {
+  background: rgba(7, 9, 12, 0.82);
+  color: var(--muted);
+}
+
+.top-connected-strip,
+.legend-chip,
+.detail-popover,
+.ask-response,
+.ask-composer,
+.action-toast {
+  border-color: rgba(86, 105, 120, 0.72);
+  background: var(--glass);
+  box-shadow: 0 18px 50px var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.top-connected-node,
+.legend-chip {
+  color: var(--text);
+}
+
+.top-connected-node:hover {
+  background: var(--surface-hover);
+}
+
+.legend-dot {
+  box-shadow: 0 0 10px var(--chip-color);
+}
+
+.legend-chip:hover:not(:disabled) {
+  border-color: var(--chip-color);
+  background: var(--surface-hover);
+  color: var(--text-strong);
+}
+
+.reset-chip {
+  border-color: var(--accent);
+  background: #10231f;
+  color: var(--accent);
+}
+
+.reset-chip strong {
+  color: rgba(188, 245, 231, 0.68);
+}
+
+.detail-list dd,
+.detail-section p,
+.edge-path,
+.ask-question p,
+.markdown-body,
+.settings-section-heading {
+  color: var(--text);
+}
+
+.type-pill {
+  box-shadow: 0 0 18px color-mix(in srgb, var(--pill-color) 44%, transparent);
+  color: #07090c;
+}
+
+.edge-path,
+.ask-question {
+  border-color: var(--border);
+  background: var(--surface);
+}
+
+.edge-path span {
+  color: #c98cff;
+}
+
+.ask-toolbar {
+  border-bottom-color: var(--border);
+}
+
+.question-levels {
+  border-color: var(--border);
+  background: #090c10;
+}
+
+.question-levels button {
+  color: var(--muted);
+}
+
+.question-levels button:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.question-levels button.active {
+  background: var(--surface-hover);
+  color: var(--accent-bright);
+  box-shadow: inset 0 0 0 1px rgba(125, 249, 255, 0.25);
+}
+
+.model-settings-trigger.needs-key,
+.form-error,
+.error-copy {
+  color: var(--danger);
+}
+
+.ask-form textarea {
+  background: transparent;
+}
+
+.ask-submit {
+  box-shadow: 0 0 22px rgba(99, 230, 193, 0.12);
+}
+
+.answer-continue {
+  border-color: var(--border-strong);
+  background: var(--surface-raised);
+  color: var(--accent);
+  box-shadow: 0 8px 24px var(--shadow);
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body strong {
+  color: var(--text-strong);
+}
+
+.markdown-body blockquote {
+  border-left-color: var(--accent);
+  color: var(--muted-strong);
+}
+
+.markdown-body code,
+.markdown-body pre {
+  border-color: var(--border);
+  background: #090c10;
+}
+
+.markdown-body a {
+  color: var(--accent-bright);
+}
+
+.markdown-body hr {
+  border-top-color: var(--border);
+}
+
+.modal-backdrop,
+.model-modal-backdrop {
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(7px);
+}
+
+.knowledge-modal,
+.model-modal {
+  border-color: var(--border-strong);
+  background: var(--surface);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.72);
+}
+
+.modal-header,
+.model-modal-header,
+.model-modal-actions {
+  border-color: var(--border);
+  background: var(--glass-strong);
+}
+
+.knowledge-modal-body,
+.settings-section {
+  background: var(--surface);
+}
+
+.upload-dropzone {
+  border-color: var(--border-strong);
+  background: #0a0e12;
+  color: var(--text);
+}
+
+.upload-dropzone.is-dragging {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.upload-dropzone svg,
+.settings-section-heading svg {
+  color: var(--accent);
+}
+
+.upload-file-row,
+.settings-section + .settings-section,
+.model-route-list,
+.model-route-row {
+  border-color: var(--border);
+}
+
+.credential-grid label > span,
+.model-route-row label > span {
+  color: var(--muted-strong);
+}
+
+.action-toast.is-error {
+  border-color: var(--danger);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .graph-svg circle {
+    transition: none;
   }
 }
