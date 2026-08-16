@@ -11,14 +11,6 @@
         </div>
       </div>
 
-      <div class="header-graph-stats" aria-label="Visible graph size">
-        <strong>{{ graph.nodes.length }}</strong>
-        <span>nodes</span>
-        <i aria-hidden="true" />
-        <strong>{{ graph.edges.length }}</strong>
-        <span>links</span>
-      </div>
-
       <NodeSearch
         v-model:query="nodeSearchQuery"
         class="header-search"

@@ -29,6 +29,13 @@
           <Scan :size="17" />
         </button>
       </div>
+      <div class="graph-counts" aria-label="Visible graph size">
+        <strong>{{ graph.nodes.length }}</strong>
+        <span>nodes</span>
+        <i aria-hidden="true" />
+        <strong>{{ graph.edges.length }}</strong>
+        <span>links</span>
+      </div>
       <div v-if="activeCategory && topConnectedNodes.length" class="top-connected-strip">
         <span class="top-connected-label">
           <Network :size="15" />
