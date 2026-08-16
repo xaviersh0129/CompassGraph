@@ -382,7 +382,7 @@ def print_summary(nodes: List[Dict[str, Any]], edges: List[Dict[str, Any]]) -> N
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Import reviewed CompassGraph JSON files into local JSONL graph store.")
+    parser = argparse.ArgumentParser(description="Import reviewed Noema JSON files into the local JSONL graph store.")
     parser.add_argument("--input-dir", default=str(DEFAULT_INPUT_DIR), help="Directory containing reviewed graph JSON files.")
     parser.add_argument("--file", action="append", default=[], help="Specific reviewed graph JSON file. Can be repeated.")
     parser.add_argument(

@@ -2,7 +2,7 @@
   <section class="ask-dock">
     <div v-if="loading || answer || error" class="ask-response">
       <div class="ask-response-top">
-        <span>CompassGraph · {{ modelLabel }}</span>
+        <span>Noema · {{ modelLabel }}</span>
         <button type="button" class="icon-btn" title="Clear answer" aria-label="Clear answer" @click="$emit('clear')">
           <X :size="16" />
         </button>
@@ -76,7 +76,7 @@
           @input="$emit('update:question', $event.target.value)"
           @keydown.enter.exact.prevent="$emit('ask')"
         />
-        <button class="ask-submit" type="submit" :disabled="loading || !question.trim()" :title="loading ? 'Asking' : 'Ask CompassGraph'">
+        <button class="ask-submit" type="submit" :disabled="loading || !question.trim()" :title="loading ? 'Asking' : 'Ask Noema'">
           <LoaderCircle v-if="loading" class="spin" :size="18" />
           <SendHorizontal v-else :size="18" />
           <span>{{ loading ? 'Asking' : 'Ask' }}</span>

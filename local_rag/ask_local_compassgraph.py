@@ -209,7 +209,7 @@ def build_prompt(
 ) -> str:
     user_profile = load_user_profile(profile_path)
     return f"""
-You are CompassGraph, a local knowledge graph RAG assistant.
+You are Noema, a local knowledge graph RAG assistant.
 
 Your job:
 - Use the user profile only when it is relevant.
@@ -228,7 +228,7 @@ Your job:
 
 {user_profile}
 
-Retrieved CompassGraph context:
+Retrieved Noema context:
 {graph_context}
 
 Retrieved note passages:
@@ -337,7 +337,7 @@ def answer_question(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Ask CompassGraph using local graph context and an OpenAI-compatible LLM.")
+    parser = argparse.ArgumentParser(description="Ask Noema using local graph context and an OpenAI-compatible LLM.")
     parser.add_argument("question", help="Knowledge question to ask.")
     parser.add_argument("--show-context", action="store_true", help="Print retrieved graph context before answer.")
     parser.add_argument("--json", action="store_true", help="Print a machine-readable JSON response.")

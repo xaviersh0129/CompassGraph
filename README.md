@@ -1,10 +1,10 @@
-# CompassGraph
+# Noema
 
-CompassGraph is a local knowledge workspace that turns notes into an interactive graph of ideas, sources, and relationships. You can explore the graph, ask questions about it with an optional AI provider, and export a public version for a portfolio or social media.
+Noema is a local knowledge workspace that turns notes into an interactive graph of ideas, sources, and relationships. You can explore the graph, ask questions about it with an optional AI provider, and export a public version for a portfolio or social media.
 
 You do not need an API key to try the sample graph or use the visualization.
 
-## What CompassGraph Does
+## What Noema Does
 
 - Shows knowledge as connected nodes and edges.
 - Stores the graph locally on your computer.
@@ -56,10 +56,10 @@ These steps run the included public sample. They do not use your personal files.
 
 Download the repository as a ZIP file and extract it, or clone it with Git.
 
-Open a terminal in the extracted `CompassGraph` folder. On macOS, an easy method is:
+Open a terminal in the extracted project folder. On macOS, an easy method is:
 
 1. Type `cd `, including the space after `cd`.
-2. Drag the `CompassGraph` folder from Finder into the Terminal window.
+2. Drag the extracted project folder from Finder into the Terminal window.
 3. Press Return.
 
 On Windows, open the folder in File Explorer, click the address bar, type `powershell`, and press Enter.
@@ -129,7 +129,7 @@ Leave this terminal open. The API runs at `http://127.0.0.1:8765`.
 
 ### Step 6: Start The Frontend
 
-Open a second terminal in the `CompassGraph` folder.
+Open a second terminal in the same project folder.
 
 Activate the Python environment again if you plan to run Python commands in this terminal:
 
@@ -197,7 +197,7 @@ To stop either local server, return to its terminal and press `Ctrl+C`.
 
 ## Add Your Own Knowledge
 
-The easiest path is entirely inside the web app. CompassGraph keeps each upload as a local source, asks your selected model to extract useful entities and relationships, merges them with the existing graph, and updates semantic search.
+The easiest path is entirely inside the web app. Noema keeps each upload as a local source, asks your selected model to extract useful entities and relationships, merges them with the existing graph, and updates semantic search.
 
 ### Step 1: Start The App
 
@@ -219,7 +219,7 @@ The selected question level also controls which model processes uploads. API key
 3. Click **Build graph**.
 4. Wait for the confirmation message. The graph refreshes automatically.
 
-Supported file types are Markdown, plain text, PDF, DOCX, HTML, JSON, and CSV. Each file can be up to 12 MB, with up to 10 files in one batch. Text-based PDFs work best; scanned images need OCR before CompassGraph can read them.
+Supported file types are Markdown, plain text, PDF, DOCX, HTML, JSON, and CSV. Each file can be up to 12 MB, with up to 10 files in one batch. Text-based PDFs work best; scanned images need OCR before Noema can read them.
 
 Uploading a file with the same filename updates that source. Its extraction JSON is replaced, then the complete graph is merged again from all saved sources. This lets the graph grow without duplicating the same note on every edit.
 
@@ -228,7 +228,7 @@ Uploading a file with the same filename updates that source. Its extraction JSON
 - Use **Find a node** above the graph to open a node and its direct connections.
 - Click any visible node to isolate its neighborhood.
 - Click a blank part of the graph or **Default view** to return to the full graph.
-- Ask a question in the bottom text box. CompassGraph retrieves relevant graph relationships and indexed note passages before calling the selected model.
+- Ask a question in the bottom text box. Noema retrieves relevant graph relationships and indexed note passages before calling the selected model.
 
 ### What The Upload Creates
 
@@ -389,7 +389,7 @@ Use the buttons above the question box:
 | **Deep** | Career strategy and multi-step decisions | 20 nodes and 60 edges |
 
 Each level can use a different model.
-CompassGraph does not set an output-token limit. The selected provider may still enforce the model's own maximum output size.
+Noema does not set an output-token limit. The selected provider may still enforce the model's own maximum output size.
 
 ### Step 2: Add Models And API Keys In The App
 
@@ -400,7 +400,7 @@ CompassGraph does not set an output-token limit. The selected provider may still
 
 The model dropdown contains these supported choices: **GPT-5.6 Sol**, **GPT-5.6 Terra**, **Gemini 3.1 Pro Preview**, **Gemini 3.6 Flash**, **Gemini 3.5 Flash-Lite**, and **Local Ollama**. You cannot enter a custom model in the web app.
 
-API keys are kept in the current browser tab's session storage. They are not written to `.env`, returned by the local API, included in command arguments, or committed to Git. The selected key is sent in the request body to the local CompassGraph API and forwarded to that provider for the current question.
+API keys are kept in the current browser tab's session storage. They are not written to `.env`, returned by the local API, included in command arguments, or committed to Git. The selected key is sent in the request body to the local Noema API and forwarded to that provider for the current question.
 
 Closing the browser session clears these settings. Enter them again when starting a new browser session.
 
@@ -420,7 +420,7 @@ Open **Model settings** and choose:
 Model: Local Ollama
 ```
 
-CompassGraph uses `qwen3.5:9b` for the **Local Ollama** option. Ollama does not need an API key. If your profile or graph context is large, open Ollama **Settings** and increase **Context length** from 4096 to 8192 or 16384 if your computer has enough available memory.
+Noema uses `qwen3.5:9b` for the **Local Ollama** option. Ollama does not need an API key. If your profile or graph context is large, open Ollama **Settings** and increase **Context length** from 4096 to 8192 or 16384 if your computer has enough available memory.
 
 ### Optional: Configure The Command Line
 
@@ -476,11 +476,11 @@ Windows PowerShell:
 Copy-Item config\user_profile.example.yaml config\user_profile.yaml
 ```
 
-Open `config/user_profile.yaml` in a text editor and replace the example values with information that should help CompassGraph answer your questions. The template supports nested sections for career direction, demonstrated strengths, work experience, projects, current priorities, development areas, preferred advice style, and decision criteria.
+Open `config/user_profile.yaml` in a text editor and replace the example values with information that should help Noema answer your questions. The template supports nested sections for career direction, demonstrated strengths, work experience, projects, current priorities, development areas, preferred advice style, and decision criteria.
 
-Every section and field is optional. Delete placeholders and entire sections that do not apply instead of leaving example values in the file. CompassGraph preserves the nested YAML structure when it gives the profile to the LLM, so you can also add your own sections.
+Every section and field is optional. Delete placeholders and entire sections that do not apply instead of leaving example values in the file. Noema preserves the nested YAML structure when it gives the profile to the LLM, so you can also add your own sections.
 
-This private file is ignored by Git. Its contents may still be sent to the model selected in the web app or configured in `.env` whenever you use **Ask CompassGraph**, so include only information you are comfortable sharing with that provider. The public `user_profile.example.yaml` contains neutral placeholders and is safe to publish.
+This private file is ignored by Git. Its contents may still be sent to the model selected in the web app or configured in `.env` whenever you use **Ask Noema**, so include only information you are comfortable sharing with that provider. The public `user_profile.example.yaml` contains neutral placeholders and is safe to publish.
 
 ## Export A Public Showcase
 
@@ -529,7 +529,7 @@ After review, publish the `showcase/` folder with a static website host such as 
 ## Where Files Are Stored
 
 ```text
-CompassGraph/
+project-folder/
   knowledge/inbox/                   Your original local uploads.
   knowledge/processed/               Normalized Markdown notes.
   storage/graph_extraction_outputs/  Extracted or manually reviewed graph JSON.

@@ -793,8 +793,8 @@ def parse_action_json(result: dict[str, Any]) -> dict[str, Any]:
         raise RuntimeError(f"Action did not return JSON: {error}") from error
 
 
-class CompassGraphHandler(BaseHTTPRequestHandler):
-    server_version = "CompassGraphAPI/0.1"
+class NoemaHandler(BaseHTTPRequestHandler):
+    server_version = "NoemaAPI/0.1"
 
     def end_headers(self) -> None:
         origin = self.headers.get("Origin", "")
@@ -1022,8 +1022,8 @@ class CompassGraphHandler(BaseHTTPRequestHandler):
 def main() -> None:
     host = "127.0.0.1"
     port = 8765
-    server = ThreadingHTTPServer((host, port), CompassGraphHandler)
-    print(f"CompassGraph API running at http://{host}:{port}")
+    server = ThreadingHTTPServer((host, port), NoemaHandler)
+    print(f"Noema API running at http://{host}:{port}")
     print("Endpoints: /api/health, /api/graph, /api/documents, /api/nodes/search?q=...")
     server.serve_forever()
 

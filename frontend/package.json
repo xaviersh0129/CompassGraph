@@ -1,5 +1,5 @@
 {
-  "name": "compassgraph-frontend",
+  "name": "noema-frontend",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -9,6 +9,7 @@
     "preview": "vite preview --host 127.0.0.1"
   },
   "dependencies": {
+    "@fontsource-variable/space-grotesk": "^5.3.0",
     "@lucide/vue": "^1.31.0",
     "@vitejs/plugin-vue": "^6.0.1",
     "d3": "^7.9.0",

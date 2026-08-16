@@ -1,13 +1,33 @@
 <template>
   <div class="app-shell">
     <header class="app-header">
-      <div class="brand-block">
-        <div class="brand-mark">CG</div>
-        <div>
-          <h1>CompassGraph</h1>
-          <span>{{ apiStatus }}</span>
+      <div class="brand-block" aria-label="Noema. Knowledge, connected.">
+        <div class="brand-mark" aria-hidden="true">
+          <Orbit :size="24" :stroke-width="1.7" />
+        </div>
+        <div class="brand-copy">
+          <h1>Noema</h1>
+          <span>Knowledge, connected.</span>
         </div>
       </div>
+
+      <div class="header-graph-stats" aria-label="Visible graph size">
+        <strong>{{ graph.nodes.length }}</strong>
+        <span>nodes</span>
+        <i aria-hidden="true" />
+        <strong>{{ graph.edges.length }}</strong>
+        <span>links</span>
+      </div>
+
+      <NodeSearch
+        v-model:query="nodeSearchQuery"
+        class="header-search"
+        :results="nodeSearchResults"
+        :loading="nodeSearchLoading"
+        @search="runNodeSearch"
+        @select="selectNodeSearchResult"
+        @clear="clearNodeSearch"
+      />
 
       <div class="header-controls">
         <button
@@ -20,7 +40,14 @@
           <PanelLeftClose v-if="panelOpen" :size="18" />
           <PanelLeftOpen v-else :size="18" />
         </button>
-        <button type="button" :disabled="knowledgeLoading" @click="knowledgeUploadOpen = true">
+        <button
+          class="header-add-btn"
+          type="button"
+          title="Add knowledge"
+          aria-label="Add knowledge"
+          :disabled="knowledgeLoading"
+          @click="knowledgeUploadOpen = true"
+        >
           <Plus :size="17" />
           <span>Add knowledge</span>
         </button>
@@ -85,17 +112,10 @@
         :can-reset="hasActiveGraphView"
         :mode-label="activeViewLabel"
         :active-category="focusedNodeId ? '' : filters.nodeCategory"
-        :search-query="nodeSearchQuery"
-        :search-results="nodeSearchResults"
-        :search-loading="nodeSearchLoading"
         @select="handleGraphSelect"
         @select-ranked-node="selectRankedNode"
         @filter-category="filterByCategory"
         @reset-view="resetGraphView"
-        @search="runNodeSearch"
-        @select-search-result="selectNodeSearchResult"
-        @clear-search="clearNodeSearch"
-        @update:search-query="nodeSearchQuery = $event"
       />
 
       <DetailPanel v-if="selected" class="detail-popover" :selected="selected" @close="selected = null" />
@@ -145,19 +165,19 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { PanelLeftClose, PanelLeftOpen, Plus, RefreshCw, Share2 } from '@lucide/vue'
+import { Orbit, PanelLeftClose, PanelLeftOpen, Plus, RefreshCw, Share2 } from '@lucide/vue'
 import GraphCanvas from './components/GraphCanvas.vue'
 import DetailPanel from './components/DetailPanel.vue'
 import AskComposer from './components/AskComposer.vue'
 import ModelSettings from './components/ModelSettings.vue'
 import KnowledgeUpload from './components/KnowledgeUpload.vue'
+import NodeSearch from './components/NodeSearch.vue'
 import { LLM_PROVIDER_MAP, loadLlmSettings, modelOptionForRoute, saveLlmSettings } from './config/llm'
 import {
-  askCompassGraph,
+  askNoema,
   exportShowcase,
   getDocuments,
   getGraph,
-  getHealth,
   processKnowledge,
   searchNodes
 } from './api/client'
@@ -168,7 +188,6 @@ const selected = ref(null)
 const graphLoading = ref(false)
 const actionLoading = ref(false)
 const askLoading = ref(false)
-const apiStatus = ref('Connecting')
 const actionToast = ref(null)
 const askQuestion = ref('')
 const askSubmittedQuestion = ref('')
@@ -214,20 +233,7 @@ const activeViewLabel = computed(() => {
 })
 
 async function refreshAll() {
-  await loadHealth()
-  const results = await Promise.allSettled([loadDocuments(), loadGraph()])
-  if (results.some((result) => result.status === 'rejected')) {
-    apiStatus.value = 'Start local API'
-  }
-}
-
-async function loadHealth() {
-  try {
-    await getHealth()
-    apiStatus.value = 'Local API ready'
-  } catch (error) {
-    apiStatus.value = 'Start local API'
-  }
+  await Promise.allSettled([loadDocuments(), loadGraph()])
 }
 
 async function loadDocuments() {
@@ -351,7 +357,7 @@ async function runExportShowcase() {
   actionLoading.value = true
   try {
     const output = await exportShowcase({
-      title: 'CompassGraph Showcase',
+      title: 'Noema Showcase',
       subtitle: 'An interactive map of a local GraphRAG knowledge base.',
       output_dir: 'showcase'
     })
@@ -379,13 +385,13 @@ async function runAsk() {
   askQuestion.value = ''
 
   try {
-    const payload = await askCompassGraph({
+    const payload = await askNoema({
       question,
       llm: currentLlmPayload()
     })
     askAnswer.value = payload.answer || 'No answer returned.'
   } catch (error) {
-    askError.value = error.message || 'CompassGraph could not answer right now.'
+    askError.value = error.message || 'Noema could not answer right now.'
   } finally {
     askLoading.value = false
   }
@@ -421,7 +427,7 @@ async function runProcessKnowledge(files) {
     knowledgeUploadOpen.value = false
     await Promise.all([loadDocuments(), loadGraph({ focusNodeId: '' })])
   } catch (error) {
-    knowledgeError.value = error.message || 'CompassGraph could not process these files.'
+    knowledgeError.value = error.message || 'Noema could not process these files.'
   } finally {
     knowledgeLoading.value = false
   }

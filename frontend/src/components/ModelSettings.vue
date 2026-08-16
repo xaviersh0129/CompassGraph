@@ -4,7 +4,7 @@
       <section class="model-modal" role="dialog" aria-modal="true" aria-labelledby="model-settings-title">
         <header class="model-modal-header">
           <div>
-            <span class="panel-kicker">Ask CompassGraph</span>
+            <span class="panel-kicker">Ask Noema</span>
             <h2 id="model-settings-title">Model settings</h2>
           </div>
           <button class="icon-btn" type="button" title="Close model settings" aria-label="Close model settings" @click="$emit('close')">

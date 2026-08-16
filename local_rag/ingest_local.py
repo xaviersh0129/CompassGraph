@@ -242,7 +242,7 @@ def append_episodes_jsonl(rows: List[Dict[str, Any]]) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Ingest processed Markdown files into local CompassGraph RAG.")
+    parser = argparse.ArgumentParser(description="Ingest processed Markdown files into the local Noema RAG.")
     parser.add_argument("--file", action="append", default=[], help="Markdown file to ingest. Can be repeated.")
     parser.add_argument("--dir", default=None, help="Directory of Markdown files to ingest.")
     parser.add_argument("--collection", default=DEFAULT_COLLECTION, help="Chroma collection name.")

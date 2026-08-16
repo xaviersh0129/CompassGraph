@@ -147,7 +147,7 @@ def render_share_card(payload: Dict[str, Any]) -> str:
   <line x1="955" y1="204" x2="844" y2="315" stroke="#8d98a6" stroke-width="10"/>
   <line x1="955" y1="204" x2="1013" y2="388" stroke="#8d98a6" stroke-width="10"/>
   <line x1="844" y1="315" x2="1013" y2="388" stroke="#8d98a6" stroke-width="10"/>
-  <text x="112" y="155" fill="#236c80" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="800">CompassGraph Showcase</text>
+  <text x="112" y="155" fill="#236c80" font-family="Arial, sans-serif" font-size="28" font-weight="800">Noema Showcase</text>
   <text x="112" y="232" fill="#171a21" font-family="Inter, Arial, sans-serif" font-size="58" font-weight="800">{title}</text>
   <text x="112" y="292" fill="#4d5561" font-family="Inter, Arial, sans-serif" font-size="28">{subtitle}</text>
   <text x="112" y="376" fill="#171a21" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="700">{stats["totalNodes"]} nodes / {stats["totalEdges"]} edges</text>
@@ -943,7 +943,7 @@ def render_html(payload: Dict[str, Any]) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Export a static public GraphRAG showcase site.")
     parser.add_argument("--output-dir", default=str(DEFAULT_OUTPUT_DIR), help="Directory for the static showcase files.")
-    parser.add_argument("--title", default="CompassGraph Showcase", help="Public title shown on the showcase page.")
+    parser.add_argument("--title", default="Noema Showcase", help="Public title shown on the showcase page.")
     parser.add_argument("--subtitle", default="An interactive map of a local GraphRAG knowledge base.", help="Public subtitle and social preview description.")
     parser.add_argument("--owner", default="", help="Optional person, team, or project name for the share card.")
     parser.add_argument("--public-url", default="", help="Optional final public URL for metadata or notes.")

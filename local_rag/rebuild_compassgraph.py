@@ -287,7 +287,7 @@ def print_course_audit(audit: Dict[str, Any]) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Rebuild CompassGraph local graph and audit source connections."
+        description="Rebuild the Noema local graph and audit source connections."
     )
 
     parser.add_argument(

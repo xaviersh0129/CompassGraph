@@ -296,7 +296,7 @@ def suggest_edges(
                 "relation": "RELATED_TO",
                 "target": target_name,
                 "target_type": target_type,
-                "evidence": f"{target_name} appears as a shared bridge node between {course_keyword} and other CompassGraph documents.",
+                "evidence": f"{target_name} appears as a shared bridge node between {course_keyword} and other Noema documents.",
                 "matched_keywords": [],
                 "confidence": 0.75,
                 "review_status": "suggested"
@@ -365,7 +365,7 @@ def print_summary(payload: Dict[str, Any]) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Suggest bridge edges for a CompassGraph source document.")
+    parser = argparse.ArgumentParser(description="Suggest bridge edges for a Noema source document.")
     parser.add_argument("--source", default="", help="Source keyword, e.g. sample_graph_rag.")
     parser.add_argument("--course", default="", help="Backward-compatible alias for --source.")
     parser.add_argument("--rules", default="", help="Optional bridge-rules YAML file. Defaults to config/bridge_rules.yaml or config/bridge_rules.example.yaml.")

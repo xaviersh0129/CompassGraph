@@ -49,7 +49,7 @@ export function exportShowcase(options = {}) {
   })
 }
 
-export function askCompassGraph({ question, maxNodes = 12, maxEdges = 35, llm } = {}) {
+export function askNoema({ question, maxNodes = 12, maxEdges = 35, llm } = {}) {
   return request('/api/actions/ask', {
     method: 'POST',
     body: JSON.stringify({
