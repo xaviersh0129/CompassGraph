@@ -168,13 +168,11 @@ The main graph fills most of the screen.
 
 | Control | What it does |
 | --- | --- |
-| **Panel** | Opens filters, source files, graph statistics, and bridge tools. |
+| Panel icon | Opens graph statistics, your scrollable source list, and public export. |
 | **Add knowledge** | Uploads notes, extracts nodes and links, merges the graph, and indexes the note. |
-| **Refresh** | Reloads the graph and documents from local storage. |
-| **Import** | Imports reviewed graph JSON files from `storage/graph_extraction_outputs/`. |
-| **Rebuild** | Imports graph files again and creates a new audit report. |
-| **Index** | Rebuilds the local semantic-search index from Markdown files in `knowledge/`. |
-| **Showcase** | Exports a standalone public website into `showcase/`. |
+| Refresh icon | Reloads the graph and source list from local storage. |
+| **Find a node** | Searches node names and opens the selected node's direct connections. |
+| **Export public graph** | Creates a standalone website from the panel. |
 | Bottom text box | Asks an optional AI provider a question using graph context. |
 
 Click a node to show its direct connections. Click an empty area or use the reset control to return to the full graph.
@@ -482,41 +480,11 @@ Every section and field is optional. Delete placeholders and entire sections tha
 
 This private file is ignored by Git. Its contents may still be sent to the model selected in the web app or configured in `.env` whenever you use **Ask CompassGraph**, so include only information you are comfortable sharing with that provider. The public `user_profile.example.yaml` contains neutral placeholders and is safe to publish.
 
-## Optional: Connect Related Sources
-
-Bridge edges connect ideas that appear across different source files.
-
-Generate suggestions for one source:
-
-```bash
-python local_rag/suggest_bridge_edges.py --source my_source_id
-```
-
-Suggestions are written to:
-
-```text
-storage/graph_connection_suggestions/
-```
-
-Review suggestion files before importing them. The frontend's **Auto apply** action accepts all current suggestions, so use it only after checking that the relationships are appropriate.
-
-To customize bridge rules:
-
-```bash
-cp config/bridge_rules.example.yaml config/bridge_rules.yaml
-```
-
-Windows PowerShell:
-
-```powershell
-Copy-Item config\bridge_rules.example.yaml config\bridge_rules.yaml
-```
-
 ## Export A Public Showcase
 
 The showcase is a static website. It does not need the local API, Chroma, `.env`, or an AI key after export.
 
-You can click **Showcase** in the app, or run:
+Open the panel and click **Export public graph**, or run:
 
 ```bash
 python local_rag/export_showcase.py \

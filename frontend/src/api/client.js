@@ -42,32 +42,6 @@ export function searchNodes(query, limit = 8) {
   return request(`/api/nodes/search?${search.toString()}`)
 }
 
-export function getBridgeSuggestions(course = '') {
-  const search = new URLSearchParams()
-  if (course) search.set('course', course)
-  const suffix = search.toString() ? `?${search.toString()}` : ''
-  return request(`/api/bridge-suggestions${suffix}`)
-}
-
-export function getRebuildReports(limit = 5) {
-  const search = new URLSearchParams({ limit: String(limit) })
-  return request(`/api/rebuild-reports?${search.toString()}`)
-}
-
-export function ingestKnowledge({ reset = true, dir = 'knowledge' } = {}) {
-  return request('/api/actions/ingest', {
-    method: 'POST',
-    body: JSON.stringify({ reset, dir })
-  })
-}
-
-export function importGraph() {
-  return request('/api/actions/import-graph', {
-    method: 'POST',
-    body: JSON.stringify({})
-  })
-}
-
 export function exportShowcase(options = {}) {
   return request('/api/actions/export-showcase', {
     method: 'POST',
@@ -109,31 +83,5 @@ export async function processKnowledge({ files, llm, index = true } = {}) {
   return request('/api/actions/process-knowledge', {
     method: 'POST',
     body: JSON.stringify({ files: encodedFiles, llm, index })
-  })
-}
-
-export function suggestBridgeEdges(course) {
-  return request('/api/actions/suggest-bridge-edges', {
-    method: 'POST',
-    body: JSON.stringify({ course })
-  })
-}
-
-export function autoApplyBridgeEdges(course) {
-  return request('/api/actions/auto-apply-bridge-edges', {
-    method: 'POST',
-    body: JSON.stringify({ course })
-  })
-}
-
-export function rebuildCompassGraph({ course = '', skipVisualize = true, ingestVector = false, suggestBridges = false } = {}) {
-  return request('/api/actions/rebuild', {
-    method: 'POST',
-    body: JSON.stringify({
-      course,
-      skip_visualize: skipVisualize,
-      ingest_vector: ingestVector,
-      suggest_bridges: suggestBridges
-    })
   })
 }
