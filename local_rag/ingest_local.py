@@ -286,6 +286,10 @@ def main() -> None:
             print("No chunks created. Skipping.")
             continue
 
+        document_id = metadatas[0].get("document_id") if metadatas else None
+        if document_id:
+            collection.delete(where={"document_id": document_id})
+
         embeddings = embedding_model.encode(
             documents,
             normalize_embeddings=True,

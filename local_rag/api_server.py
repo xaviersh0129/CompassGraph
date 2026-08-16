@@ -1,3 +1,5 @@
+import base64
+import binascii
 import json
 import os
 import re
@@ -19,6 +21,7 @@ except ModuleNotFoundError:
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 STORAGE_DIR = PROJECT_ROOT / "storage"
 KNOWLEDGE_DIR = PROJECT_ROOT / "knowledge"
+KNOWLEDGE_INBOX_DIR = KNOWLEDGE_DIR / "inbox"
 GRAPH_NODES_PATH = STORAGE_DIR / "graph_nodes.jsonl"
 GRAPH_EDGES_PATH = STORAGE_DIR / "graph_edges.jsonl"
 BRIDGE_SUGGESTIONS_DIR = STORAGE_DIR / "graph_connection_suggestions"
@@ -27,6 +30,10 @@ REBUILD_REPORT_DIR = STORAGE_DIR / "rebuild_reports"
 CHROMA_PATH = STORAGE_DIR / "chroma"
 DEFAULT_COLLECTION = "compassgraph_knowledge"
 DEFAULT_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+SUPPORTED_UPLOAD_EXTENSIONS = {".md", ".txt", ".pdf", ".docx", ".html", ".htm", ".json", ".csv"}
+MAX_UPLOAD_FILES = 10
+MAX_UPLOAD_BYTES = 12 * 1024 * 1024
+MAX_REQUEST_BYTES = 40 * 1024 * 1024
 
 _embedding_model = None
 
@@ -583,6 +590,126 @@ def search_payload(params: dict[str, list[str]]) -> dict[str, Any]:
     return {"query": query, "results": rows, "count": len(rows)}
 
 
+def search_nodes_payload(params: dict[str, list[str]]) -> dict[str, Any]:
+    query = get_query(params, "q").strip()
+    if not query:
+        return {"query": "", "results": [], "count": 0}
+
+    try:
+        limit = max(1, min(20, int(get_query(params, "limit", "8") or 8)))
+    except ValueError as error:
+        raise ValueError("Node search limit must be a number.") from error
+
+    normalized_query = " ".join(re.findall(r"[a-z0-9]+", query.lower()))
+    query_terms = set(normalized_query.split())
+    ranked: list[tuple[float, dict[str, Any]]] = []
+
+    for node in read_jsonl(GRAPH_NODES_PATH):
+        name = str(node.get("name", "")).strip()
+        if not name:
+            continue
+
+        normalized_name = " ".join(re.findall(r"[a-z0-9]+", name.lower()))
+        description = compact_text(node.get("description", ""), 180)
+        searchable = f"{normalized_name} {str(node.get('type', '')).lower()} {description.lower()}"
+        searchable_terms = set(re.findall(r"[a-z0-9]+", searchable))
+        overlap = len(query_terms & searchable_terms)
+        score = overlap * 4 + min(float(node.get("degree", 0) or 0) * 0.03, 2)
+
+        if normalized_name == normalized_query:
+            score += 100
+        elif normalized_name.startswith(normalized_query):
+            score += 55
+        elif normalized_query in normalized_name:
+            score += 35
+        elif normalized_query in searchable:
+            score += 14
+
+        if score <= 0:
+            continue
+
+        category = category_for_type(node.get("type", "Unknown"))
+        ranked.append(
+            (
+                score,
+                {
+                    "id": node.get("node_id") or slugify(name),
+                    "label": name,
+                    "type": node.get("type", "Unknown") or "Unknown",
+                    "category": category["name"],
+                    "color": category["color"],
+                    "description": description,
+                    "documents": node.get("documents", []),
+                    "degree": node.get("degree", 0),
+                    "inDegree": node.get("in_degree", 0),
+                    "outDegree": node.get("out_degree", 0),
+                },
+            )
+        )
+
+    ranked.sort(key=lambda item: (-item[0], -float(item[1].get("degree", 0) or 0), item[1]["label"].lower()))
+    results = [node for _, node in ranked[:limit]]
+    return {"query": query, "results": results, "count": len(results)}
+
+
+def safe_upload_name(value: Any) -> str:
+    original = Path(str(value or "")).name
+    suffix = Path(original).suffix.lower()
+    if suffix not in SUPPORTED_UPLOAD_EXTENSIONS:
+        allowed = ", ".join(sorted(SUPPORTED_UPLOAD_EXTENSIONS))
+        raise ValueError(f"Unsupported file type: {suffix or 'none'}. Supported types: {allowed}")
+
+    stem = re.sub(r"[^A-Za-z0-9._-]+", "_", Path(original).stem).strip("._-")[:120]
+    if not stem:
+        stem = "uploaded_note"
+    return f"{stem}{suffix}"
+
+
+def save_knowledge_uploads(files_payload: Any) -> list[Path]:
+    if not isinstance(files_payload, list) or not files_payload:
+        raise ValueError("Choose at least one knowledge file.")
+    if len(files_payload) > MAX_UPLOAD_FILES:
+        raise ValueError(f"Upload no more than {MAX_UPLOAD_FILES} files at a time.")
+
+    decoded_files: list[tuple[str, bytes]] = []
+    seen_names = set()
+    seen_source_ids = set()
+
+    for item in files_payload:
+        if not isinstance(item, dict):
+            raise ValueError("Each uploaded file must be an object.")
+
+        filename = safe_upload_name(item.get("name"))
+        if filename.casefold() in seen_names:
+            raise ValueError(f"The upload contains the same filename more than once: {filename}")
+        seen_names.add(filename.casefold())
+        source_id = Path(filename).stem.casefold()
+        if source_id in seen_source_ids:
+            raise ValueError(f"Use different filenames for sources that share the name: {Path(filename).stem}")
+        seen_source_ids.add(source_id)
+        encoded = str(item.get("content_base64", ""))
+        try:
+            content = base64.b64decode(encoded, validate=True)
+        except (binascii.Error, ValueError) as error:
+            raise ValueError(f"Could not read uploaded file: {filename}") from error
+
+        if not content:
+            raise ValueError(f"Uploaded file is empty: {filename}")
+        if len(content) > MAX_UPLOAD_BYTES:
+            raise ValueError(f"{filename} is larger than the 12 MB upload limit.")
+
+        decoded_files.append((filename, content))
+
+    KNOWLEDGE_INBOX_DIR.mkdir(parents=True, exist_ok=True)
+    saved_paths = []
+    for filename, content in decoded_files:
+        destination = KNOWLEDGE_INBOX_DIR / filename
+        destination.write_bytes(content)
+        saved_paths.append(destination)
+
+    return saved_paths
+
+
 def run_action(
     script: str,
     args: list[str],
@@ -656,16 +783,20 @@ class CompassGraphHandler(BaseHTTPRequestHandler):
                 self.write_json(load_rebuild_reports_payload(params))
             elif parsed.path == "/api/search":
                 self.write_json(search_payload(params))
+            elif parsed.path == "/api/nodes/search":
+                self.write_json(search_nodes_payload(params))
             else:
                 self.write_json({"error": "Not found"}, HTTPStatus.NOT_FOUND)
+        except ValueError as error:
+            self.write_json({"error": str(error)}, HTTPStatus.BAD_REQUEST)
         except Exception as error:
             self.write_json({"error": str(error)}, HTTPStatus.INTERNAL_SERVER_ERROR)
 
     def do_POST(self) -> None:
         parsed = urlparse(self.path)
-        payload = self.read_json_body()
 
         try:
+            payload = self.read_json_body()
             if parsed.path == "/api/actions/ingest":
                 args = ["--dir", payload.get("dir", "knowledge")]
                 if payload.get("reset", True):
@@ -728,6 +859,24 @@ class CompassGraphHandler(BaseHTTPRequestHandler):
                 if llm_metadata:
                     answer_payload["llm"] = llm_metadata
                 self.write_json(answer_payload)
+            elif parsed.path == "/api/actions/process-knowledge":
+                llm_environment, llm_metadata, _ = resolve_web_llm_config(payload.get("llm"))
+                uploaded_paths = save_knowledge_uploads(payload.get("files"))
+                args = []
+                for path in uploaded_paths:
+                    args.extend(["--file", str(path)])
+                if payload.get("index", True) is False:
+                    args.append("--skip-index")
+
+                processing_payload = parse_action_json(
+                    run_action(
+                        "local_rag/process_knowledge.py",
+                        args,
+                        env_overrides=llm_environment,
+                    )
+                )
+                processing_payload["llm"] = llm_metadata
+                self.write_json(processing_payload)
             elif parsed.path == "/api/actions/suggest-bridge-edges":
                 course = str(payload.get("course", "")).strip()
                 if not course:
@@ -798,6 +947,8 @@ class CompassGraphHandler(BaseHTTPRequestHandler):
                 self.write_json(result)
             else:
                 self.write_json({"error": "Not found"}, HTTPStatus.NOT_FOUND)
+        except ValueError as error:
+            self.write_json({"error": str(error)}, HTTPStatus.BAD_REQUEST)
         except Exception as error:
             self.write_json({"error": str(error)}, HTTPStatus.INTERNAL_SERVER_ERROR)
 
@@ -805,8 +956,13 @@ class CompassGraphHandler(BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length", "0") or 0)
         if length == 0:
             return {}
+        if length > MAX_REQUEST_BYTES:
+            raise ValueError("Request is larger than the 40 MB upload limit.")
         body = self.rfile.read(length).decode("utf-8")
-        return json.loads(body)
+        payload = json.loads(body)
+        if not isinstance(payload, dict):
+            raise ValueError("Request body must be a JSON object.")
+        return payload
 
     def write_json(self, payload: dict[str, Any], status: HTTPStatus = HTTPStatus.OK) -> None:
         body = json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8")
@@ -825,7 +981,7 @@ def main() -> None:
     port = 8765
     server = ThreadingHTTPServer((host, port), CompassGraphHandler)
     print(f"CompassGraph API running at http://{host}:{port}")
-    print("Endpoints: /api/health, /api/graph, /api/documents, /api/search?q=...")
+    print("Endpoints: /api/health, /api/graph, /api/documents, /api/nodes/search?q=...")
     server.serve_forever()
 
 

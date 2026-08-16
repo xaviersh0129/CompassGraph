@@ -13,6 +13,10 @@
         <button type="button" class="ghost-btn" @click="panelOpen = !panelOpen">
           {{ panelOpen ? 'Hide panel' : 'Panel' }}
         </button>
+        <button type="button" :disabled="knowledgeLoading" @click="knowledgeUploadOpen = true">
+          <Plus :size="17" />
+          <span>Add knowledge</span>
+        </button>
         <button type="button" class="ghost-btn" @click="refreshAll" :disabled="graphLoading">Refresh</button>
         <button type="button" @click="runImportGraph" :disabled="actionLoading">Import</button>
         <button type="button" @click="runRebuildGraph" :disabled="actionLoading">Rebuild</button>
@@ -108,9 +112,16 @@
         :loading="graphLoading"
         :can-reset="hasActiveGraphView"
         :mode-label="activeViewLabel"
+        :search-query="nodeSearchQuery"
+        :search-results="nodeSearchResults"
+        :search-loading="nodeSearchLoading"
         @select="handleGraphSelect"
         @filter-category="filterByCategory"
         @reset-view="resetGraphView"
+        @search="runNodeSearch"
+        @select-search-result="selectNodeSearchResult"
+        @clear-search="clearNodeSearch"
+        @update:search-query="nodeSearchQuery = $event"
       />
 
       <DetailPanel v-if="selected" class="detail-popover" :selected="selected" @close="selected = null" />
@@ -136,6 +147,17 @@
         @save="handleModelSettingsSave"
       />
 
+      <KnowledgeUpload
+        v-if="knowledgeUploadOpen"
+        :error="knowledgeError"
+        :loading="knowledgeLoading"
+        :model-label="activeModelLabel"
+        :model-configured="activeModelConfigured"
+        @close="closeKnowledgeUpload"
+        @open-settings="modelSettingsOpen = true"
+        @process="runProcessKnowledge"
+      />
+
       <div v-if="actionToast" class="action-toast" :class="{ 'is-error': !actionToast.ok }">
         <div>
           <strong>{{ actionToast.title }}</strong>
@@ -149,11 +171,13 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { Plus } from '@lucide/vue'
 import GraphCanvas from './components/GraphCanvas.vue'
 import DetailPanel from './components/DetailPanel.vue'
 import BridgePanel from './components/BridgePanel.vue'
 import AskComposer from './components/AskComposer.vue'
 import ModelSettings from './components/ModelSettings.vue'
+import KnowledgeUpload from './components/KnowledgeUpload.vue'
 import { LLM_PROVIDER_MAP, loadLlmSettings, modelOptionForRoute, saveLlmSettings } from './config/llm'
 import { aggregateCategoryCounts } from './config/graphCategories'
 import {
@@ -167,7 +191,9 @@ import {
   getRebuildReports,
   importGraph,
   ingestKnowledge,
+  processKnowledge,
   rebuildCompassGraph,
+  searchNodes,
   suggestBridgeEdges
 } from './api/client'
 
@@ -191,6 +217,14 @@ const llmSettings = ref(loadLlmSettings())
 const modelSettingsOpen = ref(false)
 const panelOpen = ref(false)
 const focusedNodeId = ref('')
+const knowledgeUploadOpen = ref(false)
+const knowledgeLoading = ref(false)
+const knowledgeError = ref('')
+const nodeSearchQuery = ref('')
+const nodeSearchResults = ref([])
+const nodeSearchLoading = ref(false)
+let nodeSearchTimer = null
+let nodeSearchRequest = 0
 
 const filters = reactive({
   q: '',
@@ -310,7 +344,42 @@ function resetGraphView() {
   filters.q = ''
   filters.nodeCategory = ''
   filters.relation = ''
+  nodeSearchQuery.value = ''
+  nodeSearchResults.value = []
   loadGraph({ focusNodeId: '' })
+}
+
+function runNodeSearch() {
+  const query = nodeSearchQuery.value.trim()
+  if (!query) {
+    clearNodeSearch()
+    return
+  }
+
+  focusedNodeId.value = ''
+  selected.value = null
+  filters.q = query
+  loadGraph({ focusNodeId: '' })
+}
+
+function selectNodeSearchResult(node) {
+  filters.q = ''
+  nodeSearchQuery.value = node.label
+  nodeSearchResults.value = []
+  selected.value = { kind: 'node', data: node }
+  focusedNodeId.value = node.id
+  loadGraph({ focusNodeId: node.id })
+}
+
+function clearNodeSearch() {
+  nodeSearchQuery.value = ''
+  nodeSearchResults.value = []
+  if (focusedNodeId.value || filters.q) {
+    focusedNodeId.value = ''
+    selected.value = null
+    filters.q = ''
+    loadGraph({ focusNodeId: '' })
+  }
 }
 
 function handleGraphSelect(selection) {
@@ -444,12 +513,7 @@ async function runAsk() {
   try {
     const payload = await askCompassGraph({
       question,
-      llm: {
-        provider: activeModelProvider.value.id,
-        model: activeModelRoute.value.model.trim(),
-        api_key: llmSettings.value.apiKeys[activeModelProvider.value.id] || '',
-        question_level: questionLevel.value
-      }
+      llm: currentLlmPayload()
     })
     askAnswer.value = payload.answer || 'No answer returned.'
   } catch (error) {
@@ -459,10 +523,53 @@ async function runAsk() {
   }
 }
 
+function currentLlmPayload() {
+  return {
+    provider: activeModelProvider.value.id,
+    model: activeModelRoute.value.model.trim(),
+    api_key: llmSettings.value.apiKeys[activeModelProvider.value.id] || '',
+    question_level: questionLevel.value
+  }
+}
+
+async function runProcessKnowledge(files) {
+  knowledgeError.value = ''
+  if (!activeModelConfigured.value) {
+    knowledgeError.value = `Add a ${activeModelProvider.value.label} API key before building the graph.`
+    modelSettingsOpen.value = true
+    return
+  }
+
+  knowledgeLoading.value = true
+  try {
+    const output = await processKnowledge({ files, llm: currentLlmPayload(), index: true })
+    const totals = output.totals || {}
+    const warning = output.warnings?.length ? ` ${output.warnings.join(' ')}` : ''
+    showActionToast(
+      output,
+      'Knowledge added',
+      `${totals.files || files.length} file${(totals.files || files.length) === 1 ? '' : 's'}, ${totals.nodes || 0} nodes, and ${totals.edges || 0} links added.${warning}`
+    )
+    knowledgeUploadOpen.value = false
+    await Promise.all([loadDocuments(), loadGraph({ focusNodeId: '' }), loadRebuildReports()])
+  } catch (error) {
+    knowledgeError.value = error.message || 'CompassGraph could not process these files.'
+  } finally {
+    knowledgeLoading.value = false
+  }
+}
+
+function closeKnowledgeUpload() {
+  if (knowledgeLoading.value) return
+  knowledgeUploadOpen.value = false
+  knowledgeError.value = ''
+}
+
 function handleModelSettingsSave(settings) {
   llmSettings.value = saveLlmSettings(settings)
   modelSettingsOpen.value = false
   askError.value = ''
+  knowledgeError.value = ''
 }
 
 function clearAsk() {
@@ -473,6 +580,29 @@ function clearAsk() {
 
 watch(bridgeCourse, (course) => {
   if (!course.trim()) bridgeSuggestions.value = null
+})
+
+watch(nodeSearchQuery, (query) => {
+  if (nodeSearchTimer) window.clearTimeout(nodeSearchTimer)
+  const trimmed = query.trim()
+  if (trimmed.length < 2) {
+    nodeSearchResults.value = []
+    nodeSearchLoading.value = false
+    return
+  }
+
+  const requestId = ++nodeSearchRequest
+  nodeSearchTimer = window.setTimeout(async () => {
+    nodeSearchLoading.value = true
+    try {
+      const payload = await searchNodes(trimmed, 8)
+      if (requestId === nodeSearchRequest) nodeSearchResults.value = payload.results || []
+    } catch {
+      if (requestId === nodeSearchRequest) nodeSearchResults.value = []
+    } finally {
+      if (requestId === nodeSearchRequest) nodeSearchLoading.value = false
+    }
+  }, 220)
 })
 
 onMounted(refreshAll)

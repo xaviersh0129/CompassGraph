@@ -6,6 +6,45 @@
         <h2>{{ title }}</h2>
       </div>
       <div class="toolbar-actions">
+        <form class="node-search" role="search" @submit.prevent="$emit('search')">
+          <Search :size="17" />
+          <input
+            :value="searchQuery"
+            type="search"
+            placeholder="Find a node"
+            aria-label="Find a node"
+            autocomplete="off"
+            @focus="searchFocused = true"
+            @blur="searchFocused = false"
+            @input="$emit('update:searchQuery', $event.target.value)"
+          />
+          <LoaderCircle v-if="searchLoading" class="spin" :size="16" />
+          <button
+            v-else-if="searchQuery"
+            class="node-search-clear"
+            type="button"
+            title="Clear search"
+            aria-label="Clear search"
+            @mousedown.prevent="$emit('clear-search')"
+          >
+            <X :size="16" />
+          </button>
+          <div v-if="searchFocused && searchQuery.trim().length >= 2" class="node-search-results">
+            <button
+              v-for="node in searchResults"
+              :key="node.id"
+              type="button"
+              @mousedown.prevent="selectSearchResult(node)"
+            >
+              <span class="legend-dot" :style="{ '--chip-color': node.color }" />
+              <span>
+                <strong>{{ node.label }}</strong>
+                <small>{{ node.category }} · {{ node.type }}</small>
+              </span>
+            </button>
+            <div v-if="!searchLoading && !searchResults.length" class="node-search-empty">No matching nodes</div>
+          </div>
+        </form>
         <label class="toggle-row">
           <input v-model="showNodeLabels" type="checkbox" />
           <span>Nodes</span>
@@ -14,7 +53,9 @@
           <input v-model="showEdgeLabels" type="checkbox" />
           <span>Edges</span>
         </label>
-        <button class="icon-btn" type="button" title="Fit graph" @click="fitGraph">Fit</button>
+        <button class="icon-btn" type="button" title="Fit graph" aria-label="Fit graph" @click="fitGraph">
+          <Scan :size="18" />
+        </button>
       </div>
     </div>
 
@@ -48,6 +89,7 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import * as d3 from 'd3'
+import { LoaderCircle, Scan, Search, X } from '@lucide/vue'
 import {
   GRAPH_CATEGORIES,
   categoryForType,
@@ -64,15 +106,33 @@ const props = defineProps({
     type: String,
     default: ''
   },
-  loading: Boolean
+  loading: Boolean,
+  searchLoading: Boolean,
+  searchQuery: {
+    type: String,
+    default: ''
+  },
+  searchResults: {
+    type: Array,
+    default: () => []
+  }
 })
 
-const emit = defineEmits(['select', 'filter-category', 'reset-view'])
+const emit = defineEmits([
+  'select',
+  'filter-category',
+  'reset-view',
+  'search',
+  'select-search-result',
+  'clear-search',
+  'update:searchQuery'
+])
 
 const containerRef = ref(null)
 const svgRef = ref(null)
 const showNodeLabels = ref(true)
 const showEdgeLabels = ref(false)
+const searchFocused = ref(false)
 
 let simulation = null
 let zoomBehavior = null
@@ -99,6 +159,11 @@ const legend = computed(() => {
 function edgeWidth(edge) {
   const confidence = Number(edge.confidence || 0.8)
   return Math.max(1, Math.min(4, confidence * 3))
+}
+
+function selectSearchResult(node) {
+  searchFocused.value = false
+  emit('select-search-result', node)
 }
 
 function resetSvg() {

@@ -12,7 +12,10 @@ from openai import OpenAI
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 GRAPH_NODES_PATH = PROJECT_ROOT / "storage/graph_nodes.jsonl"
 GRAPH_EDGES_PATH = PROJECT_ROOT / "storage/graph_edges.jsonl"
+CHROMA_PATH = PROJECT_ROOT / "storage/chroma"
 DEFAULT_USER_PROFILE_PATH = PROJECT_ROOT / "config/user_profile.yaml"
+DEFAULT_COLLECTION = "compassgraph_knowledge"
+DEFAULT_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 
 
 def load_user_profile(path: Path = DEFAULT_USER_PROFILE_PATH) -> str:
@@ -158,7 +161,52 @@ def retrieve_graph_context(query: str, max_nodes: int = 12, max_edges: int = 35)
     return "\n".join(lines)
 
 
-def build_prompt(question: str, graph_context: str, profile_path: Path = DEFAULT_USER_PROFILE_PATH) -> str:
+def retrieve_note_context(query: str, max_notes: int = 5) -> str:
+    if not CHROMA_PATH.exists():
+        return "No semantic note index is available."
+
+    try:
+        import chromadb
+        from sentence_transformers import SentenceTransformer
+
+        client = chromadb.PersistentClient(path=str(CHROMA_PATH))
+        collection = client.get_collection(name=DEFAULT_COLLECTION)
+        if collection.count() == 0:
+            return "No indexed note passages are available."
+
+        model = SentenceTransformer(DEFAULT_EMBEDDING_MODEL)
+        embedding = model.encode([query], normalize_embeddings=True).tolist()[0]
+        result = collection.query(
+            query_embeddings=[embedding],
+            n_results=max(1, min(max_notes, collection.count())),
+            include=["documents", "metadatas", "distances"],
+        )
+    except Exception as error:
+        return f"Semantic note retrieval was unavailable: {type(error).__name__}."
+
+    documents = result.get("documents", [[]])[0]
+    metadatas = result.get("metadatas", [[]])[0]
+    distances = result.get("distances", [[]])[0]
+    lines = ["Relevant note passages:"]
+
+    for index, document in enumerate(documents):
+        metadata = metadatas[index] or {} if index < len(metadatas) else {}
+        title = metadata.get("document_title") or metadata.get("source_file") or "Untitled note"
+        section = metadata.get("section_title") or "Imported content"
+        score = 1 - float(distances[index]) if index < len(distances) else None
+        score_text = f"; similarity {score:.2f}" if score is not None else ""
+        excerpt = " ".join(str(document or "").split())[:1800]
+        lines.append(f"- {title} / {section}{score_text}: {excerpt}")
+
+    return "\n".join(lines)
+
+
+def build_prompt(
+    question: str,
+    graph_context: str,
+    profile_path: Path = DEFAULT_USER_PROFILE_PATH,
+    note_context: str = "",
+) -> str:
     user_profile = load_user_profile(profile_path)
     return f"""
 You are CompassGraph, a local knowledge graph RAG assistant.
@@ -183,6 +231,9 @@ Your job:
 Retrieved CompassGraph context:
 {graph_context}
 
+Retrieved note passages:
+{note_context or "No semantic note passages were retrieved."}
+
 User question:
 {question}
 
@@ -194,7 +245,12 @@ Use these sections when they are useful:
 """
 
 
-def ask_llm(question: str, graph_context: str, profile_path: Path = DEFAULT_USER_PROFILE_PATH) -> str:
+def ask_llm(
+    question: str,
+    graph_context: str,
+    profile_path: Path = DEFAULT_USER_PROFILE_PATH,
+    note_context: str = "",
+) -> str:
     load_dotenv(PROJECT_ROOT / ".env")
 
     api_key = os.getenv("LLM_API_KEY")
@@ -217,7 +273,7 @@ def ask_llm(question: str, graph_context: str, profile_path: Path = DEFAULT_USER
         base_url=base_url,
     )
 
-    prompt = build_prompt(question, graph_context, profile_path)
+    prompt = build_prompt(question, graph_context, profile_path, note_context)
 
     completion_options: Dict[str, Any] = {
         "model": model_name,
@@ -255,6 +311,7 @@ def answer_question(
     question: str,
     max_nodes: int = 12,
     max_edges: int = 35,
+    max_notes: int = 5,
     profile_path: Path = DEFAULT_USER_PROFILE_PATH,
 ) -> Dict[str, str]:
     graph_context = retrieve_graph_context(
@@ -262,17 +319,20 @@ def answer_question(
         max_nodes=max_nodes,
         max_edges=max_edges,
     )
+    note_context = retrieve_note_context(question, max_notes=max_notes)
 
     answer = ask_llm(
         question=question,
         graph_context=graph_context,
         profile_path=profile_path,
+        note_context=note_context,
     )
 
     return {
         "question": question,
         "answer": answer,
         "graph_context": graph_context,
+        "note_context": note_context,
     }
 
 
@@ -283,6 +343,7 @@ def main() -> None:
     parser.add_argument("--json", action="store_true", help="Print a machine-readable JSON response.")
     parser.add_argument("--max-nodes", type=int, default=12)
     parser.add_argument("--max-edges", type=int, default=35)
+    parser.add_argument("--max-notes", type=int, default=5)
     parser.add_argument(
         "--profile",
         default=str(DEFAULT_USER_PROFILE_PATH),
@@ -294,6 +355,7 @@ def main() -> None:
         question=args.question,
         max_nodes=args.max_nodes,
         max_edges=args.max_edges,
+        max_notes=args.max_notes,
         profile_path=Path(args.profile),
     )
 

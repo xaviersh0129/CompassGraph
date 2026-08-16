@@ -37,6 +37,11 @@ export function getDocuments() {
   return request('/api/documents')
 }
 
+export function searchNodes(query, limit = 8) {
+  const search = new URLSearchParams({ q: query, limit: String(limit) })
+  return request(`/api/nodes/search?${search.toString()}`)
+}
+
 export function getBridgeSuggestions(course = '') {
   const search = new URLSearchParams()
   if (course) search.set('course', course)
@@ -79,6 +84,31 @@ export function askCompassGraph({ question, maxNodes = 12, maxEdges = 35, llm } 
       max_edges: maxEdges,
       ...(llm ? { llm } : {})
     })
+  })
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result).split(',', 2)[1] || '')
+    reader.onerror = () => reject(new Error(`Could not read ${file.name}.`))
+    reader.readAsDataURL(file)
+  })
+}
+
+export async function processKnowledge({ files, llm, index = true } = {}) {
+  const encodedFiles = await Promise.all(
+    files.map(async (file) => ({
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      content_base64: await fileToBase64(file)
+    }))
+  )
+
+  return request('/api/actions/process-knowledge', {
+    method: 'POST',
+    body: JSON.stringify({ files: encodedFiles, llm, index })
   })
 }
 

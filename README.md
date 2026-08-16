@@ -8,8 +8,10 @@ You do not need an API key to try the sample graph or use the visualization.
 
 - Shows knowledge as connected nodes and edges.
 - Stores the graph locally on your computer.
-- Indexes Markdown notes for local semantic search.
-- Uses an optional AI provider to answer questions with graph context.
+- Accepts notes and documents from the web app.
+- Uses your selected AI model to create nodes and links automatically.
+- Indexes uploaded notes for local semantic search.
+- Answers questions with both graph relationships and relevant note passages.
 - Exports a standalone showcase website for portfolios, LinkedIn, and hiring managers.
 
 In simple terms, a knowledge graph is a map of what you know. GraphRAG uses that map to find useful context before answering a question.
@@ -167,6 +169,7 @@ The main graph fills most of the screen.
 | Control | What it does |
 | --- | --- |
 | **Panel** | Opens filters, source files, graph statistics, and bridge tools. |
+| **Add knowledge** | Uploads notes, extracts nodes and links, merges the graph, and indexes the note. |
 | **Refresh** | Reloads the graph and documents from local storage. |
 | **Import** | Imports reviewed graph JSON files from `storage/graph_extraction_outputs/`. |
 | **Rebuild** | Imports graph files again and creates a new audit report. |
@@ -194,16 +197,59 @@ To stop either local server, return to its terminal and press `Ctrl+C`.
 
 ## Add Your Own Knowledge
 
-CompassGraph uses two kinds of input. They are related, but they are not the same:
+The easiest path is entirely inside the web app. CompassGraph keeps each upload as a local source, asks your selected model to extract useful entities and relationships, merges them with the existing graph, and updates semantic search.
 
-| Input | Location | Purpose |
-| --- | --- | --- |
-| Markdown notes | `knowledge/` | Human-readable notes used by the local vector index. |
-| Graph JSON | `storage/graph_extraction_outputs/` | Nodes and relationships displayed in the graph. |
+### Step 1: Start The App
 
-Important: adding a Markdown file does not automatically create graph nodes. Add both files when you want notes to be searchable and visible as a graph.
+Start the API and frontend using Steps 5 and 6 in [Quick Start](#quick-start-try-the-sample), then open the frontend address in your browser.
 
-### Step 1: Create A Markdown Note
+### Step 2: Choose The Extraction Model
+
+1. Click the settings icon above the question box.
+2. Add your Gemini or OpenAI API key, or choose **Local Ollama**.
+3. Choose the model assigned to **Quick**, **Balanced**, or **Deep**.
+4. Select that same level above the question box.
+
+The selected question level also controls which model processes uploads. API keys remain in the current browser session and are not written to the project.
+
+### Step 3: Upload Notes
+
+1. Click **Add knowledge** in the top bar.
+2. Choose one or more files, or drag them into the upload area.
+3. Click **Build graph**.
+4. Wait for the confirmation message. The graph refreshes automatically.
+
+Supported file types are Markdown, plain text, PDF, DOCX, HTML, JSON, and CSV. Each file can be up to 12 MB, with up to 10 files in one batch. Text-based PDFs work best; scanned images need OCR before CompassGraph can read them.
+
+Uploading a file with the same filename updates that source. Its extraction JSON is replaced, then the complete graph is merged again from all saved sources. This lets the graph grow without duplicating the same note on every edit.
+
+### Step 4: Explore And Ask
+
+- Use **Find a node** above the graph to open a node and its direct connections.
+- Click any visible node to isolate its neighborhood.
+- Click a blank part of the graph or **Default view** to return to the full graph.
+- Ask a question in the bottom text box. CompassGraph retrieves relevant graph relationships and indexed note passages before calling the selected model.
+
+### What The Upload Creates
+
+All generated and personal files remain local and are ignored by Git:
+
+```text
+knowledge/inbox/                    Original local uploads.
+knowledge/processed/                Normalized Markdown used for semantic search.
+storage/graph_extraction_outputs/   One extracted graph JSON file per source.
+storage/graph_nodes.jsonl           Combined graph nodes.
+storage/graph_edges.jsonl           Combined graph relationships.
+storage/chroma/                     Local semantic index.
+```
+
+The uploaded content and retrieved context are sent to Gemini or OpenAI when you select those providers. Choose **Local Ollama** when the entire model workflow must remain on your computer.
+
+### Advanced: Add Files Manually
+
+The browser workflow is recommended. The following manual path is useful for people who want to review or author graph JSON themselves.
+
+#### Create A Markdown Note
 
 Copy the included template.
 
@@ -229,7 +275,7 @@ Useful references:
 - [Relationship types](graph/relationship_types.md)
 - [Controlled vocabulary](graph/controlled_vocabulary.md)
 
-### Step 2: Create Graph JSON
+#### Create Graph JSON
 
 Create the folder if it does not exist:
 
@@ -301,7 +347,7 @@ python -m json.tool storage/graph_extraction_outputs/my_notes_graph.json
 
 If the command prints the JSON without an error, the syntax is valid.
 
-### Step 3: Import And Index Your Files
+#### Import And Index Your Files
 
 From the project folder, run:
 
@@ -314,7 +360,7 @@ The first indexing run may be slow while the embedding model is downloaded.
 
 If the app is already running, click **Refresh**. Otherwise, follow the two-server instructions in the Quick Start section.
 
-### Step 4: Audit One Source
+#### Audit One Source
 
 Use the `document_id` from your graph JSON:
 
@@ -514,8 +560,9 @@ After review, publish the `showcase/` folder with a static website host such as 
 
 ```text
 CompassGraph/
-  knowledge/                         Your processed Markdown notes.
-  storage/graph_extraction_outputs/  Your reviewed graph JSON inputs.
+  knowledge/inbox/                   Your original local uploads.
+  knowledge/processed/               Normalized Markdown notes.
+  storage/graph_extraction_outputs/  Extracted or manually reviewed graph JSON.
   storage/graph_nodes.jsonl          Generated combined graph nodes.
   storage/graph_edges.jsonl          Generated combined graph edges.
   storage/chroma/                    Generated local semantic-search index.
@@ -594,6 +641,14 @@ LLM_BASE_URL
 LLM_MODEL_NAME
 ```
 
+### Add knowledge fails
+
+Confirm that the selected question level has a configured model. Gemini and OpenAI require the matching API key. Local Ollama requires the Ollama application and `qwen3.5:9b` to be running.
+
+Local extraction can take a minute or more per note chunk, especially on its first request. Keep the API and frontend terminals open while **Building graph** is shown. Hosted models are usually faster for large batches.
+
+For PDFs, select text in a PDF viewer to confirm the document contains readable text. Scanned pages need OCR before upload.
+
 ### The showcase is empty
 
 Import or rebuild the graph before exporting the showcase.
@@ -607,6 +662,8 @@ Before committing or publishing, check that you are not sharing:
 - `config/user_profile.yaml`.
 - Unreviewed graph evidence.
 - A generated `showcase/` that contains private graph data.
+
+When using Gemini or OpenAI, uploaded note content is sent to that provider for graph extraction. Questions also send retrieved graph and note context. Use Local Ollama for a fully local model path.
 
 The following local files and folders should normally stay private:
 
@@ -634,6 +691,9 @@ python local_rag/rebuild_compassgraph.py --source my_source_id --skip-visualize
 
 # Rebuild the Markdown vector index
 python local_rag/ingest_local.py --dir knowledge --reset
+
+# Process one file from the command line using the model configured in .env
+python local_rag/process_knowledge.py --file path/to/your_note.md
 
 # Start the local API
 python local_rag/api_server.py
