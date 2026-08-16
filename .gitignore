@@ -29,6 +29,7 @@ frontend/dist/
 
 # OS files
 .DS_Store
+.Rhistory
 
 # Temporary files
 tmp/
@@ -36,9 +37,20 @@ temp/
 
 # Local generated stores and indexes
 storage/
+showcase/
 
 # Generated visualization support assets from pyvis
 lib/
 
+# Ignore everything inside the knowledge directory
+knowledge/*
+
+# Do not ignore the sample directory itself
+!knowledge/sample/
+!knowledge/sample/**
+
+# Ignore local configuration files
 config/user_profile.yaml
 config/bridge_rules.yaml
+
+screenshots/

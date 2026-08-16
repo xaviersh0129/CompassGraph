@@ -13,35 +13,33 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 GRAPH_NODES_PATH = PROJECT_ROOT / "storage/graph_nodes.jsonl"
 GRAPH_EDGES_PATH = PROJECT_ROOT / "storage/graph_edges.jsonl"
 DEFAULT_USER_PROFILE_PATH = PROJECT_ROOT / "config/user_profile.yaml"
-DEFAULT_USER_PROFILE_EXAMPLE_PATH = PROJECT_ROOT / "config/user_profile.example.yaml"
 
 
 def load_user_profile(path: Path = DEFAULT_USER_PROFILE_PATH) -> str:
     if not path.exists():
-        if DEFAULT_USER_PROFILE_EXAMPLE_PATH.exists():
-            path = DEFAULT_USER_PROFILE_EXAMPLE_PATH
-        else:
-            return "User profile: No user profile file found."
+        return "User profile: No private user profile configured."
 
     data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+
+    if not isinstance(data, dict):
+        raise ValueError(f"User profile file must contain a YAML mapping: {path}")
+
     profile = data.get("user_profile", data)
 
-    lines = ["User profile:"]
+    if profile is None or profile == {}:
+        return "User profile: No private user profile configured."
 
-    for section, values in profile.items():
-        section_title = str(section).replace("_", " ").title()
-        lines.append(f"\n{section_title}:")
+    if not isinstance(profile, dict):
+        raise ValueError(f"User profile must be a YAML mapping: {path}")
 
-        if isinstance(values, list):
-            for value in values:
-                lines.append(f"- {value}")
-        elif isinstance(values, dict):
-            for key, value in values.items():
-                lines.append(f"- {key}: {value}")
-        else:
-            lines.append(f"- {values}")
+    profile_yaml = yaml.safe_dump(
+        profile,
+        allow_unicode=True,
+        default_flow_style=False,
+        sort_keys=False,
+    ).strip()
 
-    return "\n".join(lines)
+    return f"User profile (YAML):\n{profile_yaml}"
 
 
 def read_jsonl(path: Path) -> List[Dict[str, Any]]:
@@ -168,10 +166,17 @@ You are CompassGraph, a local knowledge graph RAG assistant.
 Your job:
 - Use the user profile only when it is relevant.
 - Use the retrieved graph context as your main evidence.
+- Treat concrete evidence and outcomes as stronger signals than self-description.
+- Follow the user's preferred advice style and decision framework when relevant.
+- Do not expose sensitive profile details unless the question requires them.
 - Answer the user's question with grounded, practical reasoning.
 - Separate recommendations from assumptions.
 - Be honest about uncertainty.
 - Recommend useful next steps when the context supports them.
+- Write valid Markdown with clear headings and readable lists.
+- Complete the direct answer before adding supporting sections.
+- If the user requests a specific number of items, provide that many unless the evidence is insufficient; explain any shortfall.
+- Do not stop midway through a sentence or list item.
 
 {user_profile}
 
@@ -181,11 +186,11 @@ Retrieved CompassGraph context:
 User question:
 {question}
 
-Answer format:
-1. Direct answer
-2. Relevant graph context
-3. Suggested next steps
-4. Assumptions or gaps
+Use these sections when they are useful:
+## Direct answer
+## Relevant graph context
+## Suggested next steps
+## Assumptions or gaps
 """
 
 
@@ -195,6 +200,8 @@ def ask_llm(question: str, graph_context: str, profile_path: Path = DEFAULT_USER
     api_key = os.getenv("LLM_API_KEY")
     base_url = os.getenv("LLM_BASE_URL")
     model_name = os.getenv("LLM_MODEL_NAME")
+    provider = os.getenv("LLM_PROVIDER", "").strip().lower()
+    reasoning_effort = os.getenv("LLM_REASONING_EFFORT", "").strip().lower()
 
     if not api_key:
         raise ValueError("Missing LLM_API_KEY in .env")
@@ -212,9 +219,9 @@ def ask_llm(question: str, graph_context: str, profile_path: Path = DEFAULT_USER
 
     prompt = build_prompt(question, graph_context, profile_path)
 
-    response = client.chat.completions.create(
-        model=model_name,
-        messages=[
+    completion_options: Dict[str, Any] = {
+        "model": model_name,
+        "messages": [
             {
                 "role": "system",
                 "content": "You answer questions using a local GraphRAG knowledge base.",
@@ -224,7 +231,21 @@ def ask_llm(question: str, graph_context: str, profile_path: Path = DEFAULT_USER
                 "content": prompt,
             },
         ],
-        temperature=0.4,
+    }
+
+    if provider not in {"openai", "gemini"}:
+        completion_options["temperature"] = 0.4
+
+    if reasoning_effort and provider != "gemini":
+        allowed_efforts = {"none", "low", "medium", "high"}
+        if reasoning_effort not in allowed_efforts:
+            allowed = ", ".join(sorted(allowed_efforts))
+            raise ValueError(f"LLM_REASONING_EFFORT must be one of: {allowed}.")
+
+        completion_options["reasoning_effort"] = reasoning_effort
+
+    response = client.chat.completions.create(
+        **completion_options,
     )
 
     return response.choices[0].message.content or ""

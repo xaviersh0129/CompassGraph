@@ -63,13 +63,21 @@ export function importGraph() {
   })
 }
 
-export function askCompassGraph({ question, maxNodes = 12, maxEdges = 35 } = {}) {
+export function exportShowcase(options = {}) {
+  return request('/api/actions/export-showcase', {
+    method: 'POST',
+    body: JSON.stringify(options)
+  })
+}
+
+export function askCompassGraph({ question, maxNodes = 12, maxEdges = 35, llm } = {}) {
   return request('/api/actions/ask', {
     method: 'POST',
     body: JSON.stringify({
       question,
       max_nodes: maxNodes,
-      max_edges: maxEdges
+      max_edges: maxEdges,
+      ...(llm ? { llm } : {})
     })
   })
 }

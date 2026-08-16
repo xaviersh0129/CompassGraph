@@ -10,9 +10,13 @@
 
     <template v-if="selected?.kind === 'node'">
       <div class="type-pill" :style="{ '--pill-color': selected.data.color || '#1f6f8b' }">
-        {{ selected.data.type }}
+        {{ selected.data.category || selected.data.type }}
       </div>
       <dl class="detail-list">
+        <div>
+          <dt>Type</dt>
+          <dd>{{ selected.data.type }}</dd>
+        </div>
         <div>
           <dt>Degree</dt>
           <dd>{{ selected.data.degree || 0 }}</dd>

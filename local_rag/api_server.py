@@ -1,4 +1,5 @@
 import json
+import os
 import re
 import subprocess
 import sys
@@ -8,6 +9,11 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlparse
+
+try:
+    from local_rag.graph_categories import category_for_type, ordered_category_counts
+except ModuleNotFoundError:
+    from graph_categories import category_for_type, ordered_category_counts
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -23,6 +29,53 @@ DEFAULT_COLLECTION = "compassgraph_knowledge"
 DEFAULT_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 
 _embedding_model = None
+
+LLM_PROVIDERS = {
+    "openai": {
+        "label": "OpenAI",
+        "base_url": "https://api.openai.com/v1",
+        "requires_api_key": True,
+    },
+    "gemini": {
+        "label": "Gemini",
+        "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
+        "requires_api_key": True,
+    },
+    "ollama": {
+        "label": "Ollama",
+        "base_url": "http://127.0.0.1:11434/v1",
+        "requires_api_key": False,
+    },
+}
+
+WEB_LLM_MODELS = {
+    ("openai", "gpt-5.6-sol"),
+    ("openai", "gpt-5.6-terra"),
+    ("gemini", "gemini-3.1-pro-preview"),
+    ("gemini", "gemini-3.6-flash"),
+    ("gemini", "gemini-3.5-flash-lite"),
+    ("ollama", "qwen3.5:9b"),
+}
+
+QUESTION_LEVELS = {
+    "quick": {
+        "max_nodes": 8,
+        "max_edges": 20,
+        "reasoning_effort": "none",
+    },
+    "balanced": {
+        "max_nodes": 12,
+        "max_edges": 35,
+        "reasoning_effort": "low",
+    },
+    "deep": {
+        "max_nodes": 20,
+        "max_edges": 60,
+        "reasoning_effort": "high",
+    },
+}
+
+MODEL_NAME_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$")
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -69,12 +122,69 @@ def get_query(params: dict[str, list[str]], key: str, default: str = "") -> str:
     return values[0]
 
 
+def is_loopback_origin(origin: str) -> bool:
+    if not origin:
+        return False
+
+    parsed = urlparse(origin)
+    return parsed.scheme in {"http", "https"} and parsed.hostname in {"127.0.0.1", "localhost", "::1"}
+
+
+def resolve_web_llm_config(llm_payload: Any) -> tuple[dict[str, str], dict[str, str], dict[str, int | str]]:
+    if not isinstance(llm_payload, dict):
+        raise ValueError("LLM configuration must be an object.")
+
+    provider = str(llm_payload.get("provider", "")).strip().lower()
+    provider_config = LLM_PROVIDERS.get(provider)
+    if not provider_config:
+        raise ValueError("Provider must be one of: gemini, ollama, openai.")
+
+    model = str(llm_payload.get("model", "")).strip()
+    if not MODEL_NAME_PATTERN.fullmatch(model):
+        raise ValueError("Model name contains unsupported characters or is too long.")
+    if (provider, model) not in WEB_LLM_MODELS:
+        raise ValueError("Choose one of the supported models in Model settings.")
+
+    question_level = str(llm_payload.get("question_level", "balanced")).strip().lower()
+    level_config = QUESTION_LEVELS.get(question_level)
+    if not level_config:
+        raise ValueError("Question level must be one of: balanced, deep, quick.")
+
+    api_key = str(llm_payload.get("api_key", "")).strip()
+    if provider_config["requires_api_key"] and not api_key:
+        raise ValueError(f"Add a {provider_config['label']} API key in Model settings.")
+    if len(api_key) > 4096:
+        raise ValueError("API key is too long.")
+
+    environment = {
+        "LLM_PROVIDER": provider,
+        "LLM_API_KEY": api_key or "ollama",
+        "LLM_BASE_URL": str(provider_config["base_url"]),
+        "LLM_MODEL_NAME": model,
+    }
+
+    if provider in {"openai", "ollama"}:
+        environment["LLM_REASONING_EFFORT"] = str(level_config["reasoning_effort"])
+    else:
+        environment["LLM_REASONING_EFFORT"] = ""
+
+    metadata = {
+        "provider": provider,
+        "provider_label": str(provider_config["label"]),
+        "model": model,
+        "question_level": question_level,
+    }
+
+    return environment, metadata, level_config
+
+
 def load_graph_payload(params: dict[str, list[str]]) -> dict[str, Any]:
     raw_nodes = read_jsonl(GRAPH_NODES_PATH)
     raw_edges = read_jsonl(GRAPH_EDGES_PATH)
 
     max_nodes = int(get_query(params, "max_nodes", "250") or 250)
     node_types = csv_set(get_query(params, "node_types"))
+    node_categories = csv_set(get_query(params, "node_categories"))
     relations = csv_set(get_query(params, "relations"))
     query = get_query(params, "q").strip().lower()
     focus_node = get_query(params, "focus_node").strip()
@@ -106,6 +216,13 @@ def load_graph_payload(params: dict[str, list[str]]) -> dict[str, Any]:
             node_id
             for node_id in selected_node_ids
             if nodes_by_id[node_id].get("type", "Unknown") in node_types
+        }
+
+    if node_categories and not focus_node:
+        selected_node_ids = {
+            node_id
+            for node_id in selected_node_ids
+            if category_for_type(nodes_by_id[node_id].get("type", "Unknown"))["name"] in node_categories
         }
 
     if query and not focus_node:
@@ -203,11 +320,14 @@ def load_graph_payload(params: dict[str, list[str]]) -> dict[str, Any]:
     nodes = []
     for node_id in selected_node_ids:
         node = nodes_by_id[node_id]
+        category = category_for_type(node.get("type", "Unknown"))
         nodes.append(
             {
                 "id": node_id,
                 "label": node.get("name", node_id),
                 "type": node.get("type", "Unknown") or "Unknown",
+                "category": category["name"],
+                "color": category["color"],
                 "description": node.get("description", ""),
                 "documents": node.get("documents", []),
                 "degree": node.get("degree", edge_degree.get(node_id, 0)),
@@ -219,13 +339,17 @@ def load_graph_payload(params: dict[str, list[str]]) -> dict[str, Any]:
     nodes.sort(key=lambda item: (item.get("type", ""), item.get("label", "")))
 
     node_type_counts: dict[str, int] = {}
+    node_category_counts: dict[str, int] = {}
     relation_counts: dict[str, int] = {}
     available_node_type_counts: dict[str, int] = {}
+    available_node_category_counts: dict[str, int] = {}
     available_relation_counts: dict[str, int] = {}
 
     for node in raw_nodes:
         node_type = node.get("type", "Unknown") or "Unknown"
         available_node_type_counts[node_type] = available_node_type_counts.get(node_type, 0) + 1
+        category_name = category_for_type(node_type)["name"]
+        available_node_category_counts[category_name] = available_node_category_counts.get(category_name, 0) + 1
 
     for edge in raw_edges:
         relation = edge.get("relation", "RELATED_TO")
@@ -234,6 +358,8 @@ def load_graph_payload(params: dict[str, list[str]]) -> dict[str, Any]:
     for node in nodes:
         node_type = node["type"]
         node_type_counts[node_type] = node_type_counts.get(node_type, 0) + 1
+        category_name = node["category"]
+        node_category_counts[category_name] = node_category_counts.get(category_name, 0) + 1
 
     for edge in edges:
         relation = edge["relation"]
@@ -248,8 +374,10 @@ def load_graph_payload(params: dict[str, list[str]]) -> dict[str, Any]:
             "visibleNodes": len(nodes),
             "visibleEdges": len(edges),
             "nodeTypes": sorted(node_type_counts.items(), key=lambda item: (-item[1], item[0])),
+            "nodeCategories": ordered_category_counts(node_category_counts),
             "relations": sorted(relation_counts.items(), key=lambda item: (-item[1], item[0])),
             "availableNodeTypes": sorted(available_node_type_counts.items(), key=lambda item: (-item[1], item[0])),
+            "availableNodeCategories": ordered_category_counts(available_node_category_counts),
             "availableRelations": sorted(available_relation_counts.items(), key=lambda item: (-item[1], item[0])),
             "focusNode": focus_node or None,
         },
@@ -455,8 +583,17 @@ def search_payload(params: dict[str, list[str]]) -> dict[str, Any]:
     return {"query": query, "results": rows, "count": len(rows)}
 
 
-def run_action(script: str, args: list[str]) -> dict[str, Any]:
+def run_action(
+    script: str,
+    args: list[str],
+    env_overrides: dict[str, str] | None = None,
+) -> dict[str, Any]:
     command = [sys.executable, str(PROJECT_ROOT / script), *args]
+    environment = None
+    if env_overrides:
+        environment = os.environ.copy()
+        environment.update(env_overrides)
+
     completed = subprocess.run(
         command,
         cwd=PROJECT_ROOT,
@@ -464,6 +601,7 @@ def run_action(script: str, args: list[str]) -> dict[str, Any]:
         text=True,
         timeout=1800,
         check=False,
+        env=environment,
     )
     return {
         "command": " ".join(command),
@@ -489,7 +627,10 @@ class CompassGraphHandler(BaseHTTPRequestHandler):
     server_version = "CompassGraphAPI/0.1"
 
     def end_headers(self) -> None:
-        self.send_header("Access-Control-Allow-Origin", "*")
+        origin = self.headers.get("Origin", "")
+        if is_loopback_origin(origin):
+            self.send_header("Access-Control-Allow-Origin", origin)
+            self.send_header("Vary", "Origin")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         super().end_headers()
@@ -532,26 +673,60 @@ class CompassGraphHandler(BaseHTTPRequestHandler):
                 self.write_json(run_action("local_rag/ingest_local.py", args))
             elif parsed.path == "/api/actions/import-graph":
                 self.write_json(run_action("local_rag/import_reviewed_graph.py", []))
+            elif parsed.path == "/api/actions/export-showcase":
+                args = []
+                for key, flag in [
+                    ("title", "--title"),
+                    ("subtitle", "--subtitle"),
+                    ("owner", "--owner"),
+                    ("public_url", "--public-url"),
+                    ("output_dir", "--output-dir"),
+                    ("max_nodes", "--max-nodes"),
+                ]:
+                    value = str(payload.get(key, "")).strip()
+                    if value:
+                        args.extend([flag, value])
+
+                result = run_action("local_rag/export_showcase.py", args)
+                if result.get("ok"):
+                    result["showcase"] = parse_action_json(result)
+                self.write_json(result)
             elif parsed.path == "/api/actions/ask":
                 question = str(payload.get("question", "")).strip()
                 if not question:
                     raise ValueError("Missing required field: question")
 
+                llm_metadata = None
+                llm_environment = None
+                max_nodes = payload.get("max_nodes", 12)
+                max_edges = payload.get("max_edges", 35)
+
+                if "llm" in payload:
+                    llm_environment, llm_metadata, level_config = resolve_web_llm_config(payload["llm"])
+                    max_nodes = level_config["max_nodes"]
+                    max_edges = level_config["max_edges"]
+
                 args = [
                     question,
                     "--json",
                     "--max-nodes",
-                    str(payload.get("max_nodes", 12)),
+                    str(max_nodes),
                     "--max-edges",
-                    str(payload.get("max_edges", 35)),
+                    str(max_edges),
                 ]
 
                 if payload.get("profile"):
                     args.extend(["--profile", str(payload["profile"])])
 
-                result = run_action("local_rag/ask_local_compassgraph.py", args)
+                result = run_action(
+                    "local_rag/ask_local_compassgraph.py",
+                    args,
+                    env_overrides=llm_environment,
+                )
                 answer_payload = parse_action_json(result)
                 answer_payload["ok"] = True
+                if llm_metadata:
+                    answer_payload["llm"] = llm_metadata
                 self.write_json(answer_payload)
             elif parsed.path == "/api/actions/suggest-bridge-edges":
                 course = str(payload.get("course", "")).strip()

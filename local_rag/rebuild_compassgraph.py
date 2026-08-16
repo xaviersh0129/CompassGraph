@@ -293,7 +293,13 @@ def main() -> None:
     parser.add_argument(
         "--course",
         default=None,
-        help="Optional source keyword or course code to audit, e.g. sample_graph_rag.",
+        help="Backward-compatible alias for --source.",
+    )
+
+    parser.add_argument(
+        "--source",
+        default=None,
+        help="Optional source keyword to audit, e.g. sample_graph_rag.",
     )
 
     parser.add_argument(
@@ -323,7 +329,7 @@ def main() -> None:
     parser.add_argument(
         "--suggest-bridges",
         action="store_true",
-        help="Also generate bridge-edge suggestions for the audited course.",
+        help="Also generate bridge-edge suggestions for the audited source.",
     )
 
     parser.add_argument(
@@ -334,6 +340,7 @@ def main() -> None:
     )
 
     args = parser.parse_args()
+    source_keyword = args.source or args.course
 
     if not args.skip_import:
         run_command([sys.executable, "local_rag/import_reviewed_graph.py"])
@@ -374,41 +381,41 @@ def main() -> None:
     print_graph_summary(summary)
 
     course_audit = None
-    if args.course:
+    if source_keyword:
         course_audit = audit_course_connections(
             nodes=nodes,
             edges=edges,
-            course_keyword=args.course,
+            course_keyword=source_keyword,
         )
         print_course_audit(course_audit)
 
     bridge_suggestions_path = None
     if args.suggest_bridges:
-        if not args.course:
-            raise ValueError("--suggest-bridges requires --course.")
+        if not source_keyword:
+            raise ValueError("--suggest-bridges requires --source.")
 
         run_command(
             [
                 sys.executable,
                 "local_rag/suggest_bridge_edges.py",
-                "--course",
-                args.course,
+                "--source",
+                source_keyword,
             ],
             required=False,
         )
         bridge_suggestions_path = str(
-            PROJECT_ROOT / "storage/graph_connection_suggestions" / f"{args.course.lower()}_bridge_edges_suggested.json"
+            PROJECT_ROOT / "storage/graph_connection_suggestions" / f"{source_keyword.lower()}_bridge_edges_suggested.json"
         )
 
     report = {
         "created_at": datetime.now().isoformat(),
-        "course": args.course,
+        "course": source_keyword,
         "summary": summary,
         "course_audit": course_audit,
         "bridge_suggestions_path": bridge_suggestions_path,
     }
 
-    report_path = write_report(report, args.course)
+    report_path = write_report(report, source_keyword)
     removed_reports = prune_old_reports(args.keep_reports)
 
     print("\n" + "=" * 100)
@@ -420,9 +427,9 @@ def main() -> None:
         for path in removed_reports:
             print(f"- {path}")
 
-    if args.course and course_audit and course_audit["status"] == "needs_review":
+    if source_keyword and course_audit and course_audit["status"] == "needs_review":
         print("\nRecommended next step:")
-        print(f"Review bridge edges for {args.course} and add missing cross-document links.")
+        print(f"Review bridge edges for {source_keyword} and add missing cross-document links.")
 
 
 if __name__ == "__main__":

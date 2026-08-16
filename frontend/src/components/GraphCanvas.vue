@@ -31,14 +31,14 @@
       </button>
       <button
         v-for="item in legend"
-        :key="item.type"
+        :key="item.category"
         class="legend-chip"
         type="button"
-        :style="{ '--chip-color': colorForType(item.type) }"
-        @click="$emit('filter-type', item.type)"
+        :style="{ '--chip-color': colorForCategory(item.category) }"
+        @click="$emit('filter-category', item.category)"
       >
         <span class="legend-dot" />
-        <span>{{ item.type }}</span>
+        <span>{{ item.category }}</span>
         <strong>{{ item.count }}</strong>
       </button>
     </div>
@@ -48,6 +48,11 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import * as d3 from 'd3'
+import {
+  GRAPH_CATEGORIES,
+  categoryForType,
+  colorForCategory
+} from '../config/graphCategories'
 
 const props = defineProps({
   graph: {
@@ -62,7 +67,7 @@ const props = defineProps({
   loading: Boolean
 })
 
-const emit = defineEmits(['select', 'filter-type', 'reset-view'])
+const emit = defineEmits(['select', 'filter-category', 'reset-view'])
 
 const containerRef = ref(null)
 const svgRef = ref(null)
@@ -73,19 +78,6 @@ let simulation = null
 let zoomBehavior = null
 let graphLayer = null
 
-const palette = [
-  '#1f6f8b',
-  '#d95f59',
-  '#2f8f5b',
-  '#7b61a8',
-  '#c98c2b',
-  '#3b6fb6',
-  '#b8476b',
-  '#507c46',
-  '#6b6f34',
-  '#686f7a'
-]
-
 const title = computed(() => {
   const nodes = props.graph?.nodes?.length || 0
   const edges = props.graph?.edges?.length || 0
@@ -95,18 +87,14 @@ const title = computed(() => {
 const legend = computed(() => {
   const counts = new Map()
   ;(props.graph.nodes || []).forEach((node) => {
-    counts.set(node.type, (counts.get(node.type) || 0) + 1)
+    const category = node.category || categoryForType(node.type).name
+    counts.set(category, (counts.get(category) || 0) + 1)
   })
 
-  return Array.from(counts.entries())
-    .map(([type, count]) => ({ type, count }))
-    .sort((a, b) => b.count - a.count || a.type.localeCompare(b.type))
+  return GRAPH_CATEGORIES
+    .filter((category) => counts.has(category.name))
+    .map((category) => ({ category: category.name, count: counts.get(category.name) }))
 })
-
-function colorForType(type) {
-  const index = legend.value.findIndex((item) => item.type === type)
-  return palette[(index < 0 ? 0 : index) % palette.length]
-}
 
 function edgeWidth(edge) {
   const confidence = Number(edge.confidence || 0.8)
@@ -129,7 +117,14 @@ function renderGraph() {
 
   resetSvg()
 
-  const nodes = (props.graph.nodes || []).map((node) => ({ ...node }))
+  const nodes = (props.graph.nodes || []).map((node) => {
+    const category = node.category || categoryForType(node.type).name
+    return {
+      ...node,
+      category,
+      color: node.color || colorForCategory(category)
+    }
+  })
   const edges = (props.graph.edges || []).map((edge) => ({ ...edge }))
 
   if (!nodes.length) return
@@ -196,7 +191,7 @@ function renderGraph() {
     .data(nodes, (item) => item.id)
     .join('circle')
     .attr('r', (item) => Math.max(8, Math.min(24, 8 + Math.sqrt(item.degree || 1) * 2.4)))
-    .attr('fill', (item) => colorForType(item.type))
+    .attr('fill', (item) => item.color)
     .attr('stroke', '#ffffff')
     .attr('stroke-width', 1.8)
     .on('click', (event, item) => {

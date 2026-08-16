@@ -125,7 +125,7 @@ def discover_json_files(input_dir: Path, files: List[str]) -> List[Path]:
         if path.exists() and path.suffix.lower() == ".json":
             discovered.append(path)
 
-    if input_dir.exists():
+    if input_dir.exists() and not files:
         discovered.extend(sorted(input_dir.glob("*.json")))
 
     unique = []

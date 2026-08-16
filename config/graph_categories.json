@@ -1,0 +1,43 @@
+{
+  "categories": [
+    {
+      "name": "Knowledge",
+      "color": "#236c80",
+      "types": ["Concept", "Formula"]
+    },
+    {
+      "name": "Practice",
+      "color": "#4d8050",
+      "types": ["Framework", "Method", "Skill"]
+    },
+    {
+      "name": "Direction",
+      "color": "#b54d62",
+      "types": ["Role", "CareerPath", "Goal"]
+    },
+    {
+      "name": "Work",
+      "color": "#c4862e",
+      "types": ["ProjectIdea", "CaseStudy"]
+    },
+    {
+      "name": "Evidence",
+      "color": "#506ba3",
+      "types": ["Course", "Source", "Document", "Article", "Book"]
+    },
+    {
+      "name": "Decision",
+      "color": "#7b5a91",
+      "types": ["Risk", "DecisionCriterion"]
+    },
+    {
+      "name": "Organization",
+      "color": "#53706b",
+      "types": ["Company", "Organization", "Team"]
+    }
+  ],
+  "fallback": {
+    "name": "Other",
+    "color": "#737983"
+  }
+}

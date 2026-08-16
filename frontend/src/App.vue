@@ -16,6 +16,7 @@
         <button type="button" class="ghost-btn" @click="refreshAll" :disabled="graphLoading">Refresh</button>
         <button type="button" @click="runImportGraph" :disabled="actionLoading">Import</button>
         <button type="button" @click="runRebuildGraph" :disabled="actionLoading">Rebuild</button>
+        <button type="button" @click="runExportShowcase" :disabled="actionLoading">Showcase</button>
         <button type="button" @click="runIngest" :disabled="actionLoading">Index</button>
       </div>
     </header>
@@ -30,10 +31,10 @@
           </label>
 
           <label>
-            <span>Node type</span>
-            <select v-model="filters.nodeType" @change="applyFilters">
-              <option value="">All types</option>
-              <option v-for="item in allNodeTypes" :key="item[0]" :value="item[0]">
+            <span>Category</span>
+            <select v-model="filters.nodeCategory" @change="applyFilters">
+              <option value="">All categories</option>
+              <option v-for="item in allNodeCategories" :key="item[0]" :value="item[0]">
                 {{ item[0] }} ({{ item[1] }})
               </option>
             </select>
@@ -108,7 +109,7 @@
         :can-reset="hasActiveGraphView"
         :mode-label="activeViewLabel"
         @select="handleGraphSelect"
-        @filter-type="filterByType"
+        @filter-category="filterByCategory"
         @reset-view="resetGraphView"
       />
 
@@ -116,11 +117,23 @@
 
       <AskComposer
         v-model:question="askQuestion"
+        v-model:question-level="questionLevel"
         :answer="askAnswer"
         :error="askError"
         :loading="askLoading"
+        :submitted-question="askSubmittedQuestion"
+        :model-label="activeModelLabel"
+        :model-configured="activeModelConfigured"
         @ask="runAsk"
         @clear="clearAsk"
+        @open-settings="modelSettingsOpen = true"
+      />
+
+      <ModelSettings
+        v-if="modelSettingsOpen"
+        :settings="llmSettings"
+        @close="modelSettingsOpen = false"
+        @save="handleModelSettingsSave"
       />
 
       <div v-if="actionToast" class="action-toast" :class="{ 'is-error': !actionToast.ok }">
@@ -140,9 +153,13 @@ import GraphCanvas from './components/GraphCanvas.vue'
 import DetailPanel from './components/DetailPanel.vue'
 import BridgePanel from './components/BridgePanel.vue'
 import AskComposer from './components/AskComposer.vue'
+import ModelSettings from './components/ModelSettings.vue'
+import { LLM_PROVIDER_MAP, loadLlmSettings, modelOptionForRoute, saveLlmSettings } from './config/llm'
+import { aggregateCategoryCounts } from './config/graphCategories'
 import {
   askCompassGraph,
   autoApplyBridgeEdges,
+  exportShowcase,
   getBridgeSuggestions,
   getDocuments,
   getGraph,
@@ -166,26 +183,44 @@ const bridgeCourse = ref('')
 const bridgeSuggestions = ref(null)
 const rebuildReports = ref([])
 const askQuestion = ref('')
+const askSubmittedQuestion = ref('')
 const askAnswer = ref('')
 const askError = ref('')
+const questionLevel = ref('balanced')
+const llmSettings = ref(loadLlmSettings())
+const modelSettingsOpen = ref(false)
 const panelOpen = ref(false)
 const focusedNodeId = ref('')
 
 const filters = reactive({
   q: '',
-  nodeType: '',
+  nodeCategory: '',
   relation: '',
   maxNodes: 140
 })
 
-const allNodeTypes = computed(() => graph.value.stats?.availableNodeTypes || graph.value.stats?.nodeTypes || [])
+const allNodeCategories = computed(() => {
+  return (
+    graph.value.stats?.availableNodeCategories ||
+    aggregateCategoryCounts(graph.value.stats?.availableNodeTypes || graph.value.stats?.nodeTypes || [])
+  )
+})
 const allRelations = computed(() => graph.value.stats?.availableRelations || graph.value.stats?.relations || [])
+const activeModelRoute = computed(() => llmSettings.value.routes[questionLevel.value])
+const activeModelProvider = computed(() => LLM_PROVIDER_MAP[activeModelRoute.value.provider])
+const activeModelOption = computed(() => modelOptionForRoute(activeModelRoute.value))
+const activeModelLabel = computed(() => activeModelOption.value?.label || 'No model selected')
+const activeModelConfigured = computed(() => {
+  if (!activeModelRoute.value.model.trim()) return false
+  if (!activeModelProvider.value.requiresApiKey) return true
+  return Boolean(llmSettings.value.apiKeys[activeModelProvider.value.id]?.trim())
+})
 const hasActiveGraphView = computed(() => {
-  return Boolean(focusedNodeId.value || filters.nodeType || filters.relation || filters.q)
+  return Boolean(focusedNodeId.value || filters.nodeCategory || filters.relation || filters.q)
 })
 const activeViewLabel = computed(() => {
   if (focusedNodeId.value && selected.value?.kind === 'node') return selected.value.data.label
-  if (filters.nodeType) return filters.nodeType
+  if (filters.nodeCategory) return filters.nodeCategory
   if (filters.relation) return filters.relation
   if (filters.q) return filters.q
   return ''
@@ -224,7 +259,7 @@ async function loadGraph({ focusNodeId = focusedNodeId.value } = {}) {
       : {
           q: filters.q,
           max_nodes: filters.maxNodes,
-          node_types: filters.nodeType,
+          node_categories: filters.nodeCategory,
           relations: filters.relation
         }
 
@@ -248,10 +283,10 @@ async function loadRebuildReports() {
   rebuildReports.value = payload.reports || []
 }
 
-function filterByType(type) {
+function filterByCategory(category) {
   focusedNodeId.value = ''
   selected.value = null
-  filters.nodeType = filters.nodeType === type ? '' : type
+  filters.nodeCategory = filters.nodeCategory === category ? '' : category
   loadGraph({ focusNodeId: '' })
 }
 
@@ -273,7 +308,7 @@ function resetGraphView() {
   focusedNodeId.value = ''
   selected.value = null
   filters.q = ''
-  filters.nodeType = ''
+  filters.nodeCategory = ''
   filters.relation = ''
   loadGraph({ focusNodeId: '' })
 }
@@ -375,18 +410,46 @@ async function runIngest() {
   }
 }
 
+async function runExportShowcase() {
+  actionLoading.value = true
+  try {
+    const output = await exportShowcase({
+      title: 'CompassGraph Showcase',
+      subtitle: 'An interactive map of a local GraphRAG knowledge base.',
+      output_dir: 'showcase'
+    })
+    const path = output.showcase?.index || 'showcase/index.html'
+    showActionToast(output, 'Showcase exported', `Static site ready at ${path}.`)
+  } finally {
+    actionLoading.value = false
+  }
+}
+
 async function runAsk() {
-  if (!askQuestion.value.trim()) return
+  const question = askQuestion.value.trim()
+  if (!question) return
+
+  if (!activeModelConfigured.value) {
+    askError.value = `Add a ${activeModelProvider.value.label} API key before asking.`
+    modelSettingsOpen.value = true
+    return
+  }
 
   askLoading.value = true
+  askSubmittedQuestion.value = question
   askAnswer.value = ''
   askError.value = ''
+  askQuestion.value = ''
 
   try {
     const payload = await askCompassGraph({
-      question: askQuestion.value.trim(),
-      maxNodes: 12,
-      maxEdges: 35
+      question,
+      llm: {
+        provider: activeModelProvider.value.id,
+        model: activeModelRoute.value.model.trim(),
+        api_key: llmSettings.value.apiKeys[activeModelProvider.value.id] || '',
+        question_level: questionLevel.value
+      }
     })
     askAnswer.value = payload.answer || 'No answer returned.'
   } catch (error) {
@@ -396,7 +459,14 @@ async function runAsk() {
   }
 }
 
+function handleModelSettingsSave(settings) {
+  llmSettings.value = saveLlmSettings(settings)
+  modelSettingsOpen.value = false
+  askError.value = ''
+}
+
 function clearAsk() {
+  askSubmittedQuestion.value = ''
   askAnswer.value = ''
   askError.value = ''
 }

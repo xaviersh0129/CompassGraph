@@ -1,25 +1,141 @@
+# Public template for optional personalized answers.
+# Copy this file to config/user_profile.yaml, then replace or delete fields.
+# Everything in user_profile.yaml may be sent to your configured LLM provider.
+
 user_profile:
-  background:
-    - "Describe your role, field, or learning context."
-    - "Add relevant constraints, such as timeline, location, or preferred tools."
 
-  interests:
-    - "Knowledge management"
-    - "Research"
-    - "Learning systems"
+  identity:
+    name: "Your full name"
+    preferred_name: "Name the assistant should use"
+    nationality: "Optional nationality"
+    current_location: "City, Country"
+    home_university: "Optional university or institution"
+    languages:
+      - "Primary language"
+      - "Another language"
 
-  goals:
-    - "Build a useful local knowledge graph."
-    - "Turn notes into retrievable, connected knowledge."
+  education:
+    university: "University or training provider"
+    degree: "Degree or qualification"
+    minor: "Optional minor"
+    specialization: "Optional specialization"
+    expected_graduation: "Month YYYY"
+    cgpa: "Optional grade or classification"
+    achievements:
+      - "Academic award, scholarship, or achievement"
+    international_program:
+      name: "Optional exchange or international program"
+      period: "YYYY"
+    relevant_coursework:
+      - "Relevant subject one"
+      - "Relevant subject two"
+
+  career_direction:
+    near_term_roles:
+      primary:
+        - "Primary role family"
+        - "Another primary role family"
+      secondary:
+        - "Secondary role family"
+    preferred_work:
+      - "Type of problem you enjoy solving"
+      - "Work environment or responsibility you prefer"
+      - "Kind of impact you want to create"
+    long_term_goals:
+      - "A long-term professional goal"
+      - "A capability or position you want to build toward"
+
+  domain_interests:
+    core:
+      - "Main domain interest"
+      - "Another established interest"
+    emerging:
+      - "New domain you are exploring"
 
   working_style:
-    - "Prefers practical next steps."
-    - "Wants concise reasoning with clear tradeoffs."
+    strengths:
+      - "How you approach difficult or ambiguous work"
+      - "A repeatable working strength"
+      - "How you combine analysis, execution, or communication"
+    learning_preferences:
+      - "How you learn most effectively"
+      - "The kinds of examples or explanations you prefer"
+    self_description:
+      personality_framework: "Optional self-description"
+      note: "Treat personal labels as weak context, not evidence for recommendations."
 
-  current_projects:
-    - "A local GraphRAG workspace for personal or team knowledge."
+  demonstrated_strengths:
+    - "Strength supported by work, study, or project evidence"
+    - "Another demonstrated strength"
 
-  preferred_response_style:
-    - "Be direct and specific."
-    - "Cite relevant graph context when useful."
-    - "Separate recommendations from assumptions."
+  work_experience:
+    - company: "Example Company"
+      role: "Example Role"
+      location: "City, Country"
+      period: "Month YYYY - Month YYYY"
+      context:
+        - "Who the work supported or what problem existed"
+        - "Relevant team or operating context"
+      ownership:
+        - "What you personally owned from start to finish"
+      evidence:
+        - "Built or improved something with a measurable result"
+        - "Reduced time, cost, errors, or risk by an estimated amount"
+      relevant_strengths:
+        - "Strength demonstrated by this experience"
+        - "Another relevant capability"
+
+  projects:
+    - name: "Example Project"
+      type: "Independent, academic, or team project"
+      role: "Your role"
+      description:
+        - "What the project does and why it matters"
+      personal_contribution:
+        - "What you personally designed, built, or decided"
+      evidence:
+        - "A measurable result, evaluation, or concrete output"
+      relevant_strengths:
+        - "Capability demonstrated by this project"
+
+  technical_skills:
+    programming:
+      - "Programming language"
+    analytics_and_data:
+      - "Analytics, data, or visualization tool"
+    machine_learning:
+      - "Machine-learning method or domain"
+    ai_systems:
+      - "AI system or application pattern"
+    development:
+      - "Development tool or framework"
+
+  current_priorities:
+    - "Most important goal for the next three to twelve months"
+    - "Evidence, experience, or capability you want to develop"
+
+  career_strengths_to_emphasize:
+    - "Combination of strengths that differentiates you"
+    - "Evidence that should be emphasized in applications or decisions"
+
+  development_areas:
+    - "Important gap to address"
+    - "Evidence or experience you still need to build"
+
+  preferred_advice_style:
+    - "Be practical and direct."
+    - "Recommend the strongest next step instead of listing generic options."
+    - "Explain important trade-offs and assumptions."
+    - "Prioritize actions with strong learning or evidence value."
+    - "Challenge weak assumptions rather than automatically agreeing."
+
+  decision_framework:
+    optimize_for:
+      - "Long-term learning"
+      - "Meaningful ownership"
+      - "Transferable skills"
+      - "Fit with long-term goals"
+    avoid_overweighting:
+      - "Prestige without relevant learning"
+      - "Short-term benefits that weaken long-term fit"
+      - "Self-description without supporting evidence"

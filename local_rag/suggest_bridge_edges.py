@@ -365,11 +365,16 @@ def print_summary(payload: Dict[str, Any]) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Suggest bridge edges for a CompassGraph source document or course.")
-    parser.add_argument("--course", required=True, help="Source keyword or course code, e.g. sample_graph_rag.")
+    parser = argparse.ArgumentParser(description="Suggest bridge edges for a CompassGraph source document.")
+    parser.add_argument("--source", default="", help="Source keyword, e.g. sample_graph_rag.")
+    parser.add_argument("--course", default="", help="Backward-compatible alias for --source.")
     parser.add_argument("--rules", default="", help="Optional bridge-rules YAML file. Defaults to config/bridge_rules.yaml or config/bridge_rules.example.yaml.")
     parser.add_argument("--output-dir", default=str(OUTPUT_DIR), help="Where to save suggestion JSON.")
     args = parser.parse_args()
+    source_keyword = args.source or args.course
+
+    if not source_keyword:
+        raise ValueError("Missing required --source keyword.")
 
     nodes = read_jsonl(GRAPH_NODES_PATH)
     edges = read_jsonl(GRAPH_EDGES_PATH)
@@ -381,14 +386,14 @@ def main() -> None:
     payload = suggest_edges(
         nodes=nodes,
         edges=edges,
-        course_keyword=args.course,
+        course_keyword=source_keyword,
         bridge_rules=bridge_rules,
     )
 
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    output_path = output_dir / f"{args.course.lower()}_bridge_edges_suggested.json"
+    output_path = output_dir / f"{source_keyword.lower()}_bridge_edges_suggested.json"
     output_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
 
     print_summary(payload)
@@ -397,8 +402,8 @@ def main() -> None:
     print("\nReview workflow:")
     print(f"1. Open {output_path}")
     print("2. Delete or edit weak suggestions")
-    print(f"3. Save approved copy as storage/graph_extraction_outputs/{args.course.lower()}_bridge_edges_reviewed.json")
-    print("4. Run: python local_rag/rebuild_compassgraph.py --course " + args.course)
+    print(f"3. Save approved copy as storage/graph_extraction_outputs/{source_keyword.lower()}_bridge_edges_reviewed.json")
+    print("4. Run: python local_rag/rebuild_compassgraph.py --source " + source_keyword)
 
 
 if __name__ == "__main__":
