@@ -48,28 +48,30 @@ def display_path(path: Path) -> str:
         return str(path)
 
 
-def without_private_profile(values: Any) -> List[str]:
+def without_private_values(values: Any, private_values: Any) -> List[str]:
+    blocked = {str(value) for value in private_values or []}
+    blocked.update({PRIVATE_PROFILE_DOCUMENT, PRIVATE_PROFILE_DOCUMENT_ID})
     return [
         str(value)
         for value in values or []
-        if str(value) not in {PRIVATE_PROFILE_DOCUMENT, PRIVATE_PROFILE_DOCUMENT_ID}
+        if str(value) not in blocked
         and not str(value).endswith("config/user_profile.yaml")
     ]
 
 
 def sanitize_public_node(node: Dict[str, Any]) -> Dict[str, Any]:
     sanitized = dict(node)
-    sanitized["documents"] = without_private_profile(node.get("documents", []))
-    sanitized["document_ids"] = without_private_profile(node.get("document_ids", []))
-    sanitized["source_files"] = without_private_profile(node.get("source_files", []))
+    sanitized["documents"] = without_private_values(node.get("documents", []), node.get("private_documents", []))
+    sanitized["document_ids"] = without_private_values(node.get("document_ids", []), node.get("private_document_ids", []))
+    sanitized["source_files"] = without_private_values(node.get("source_files", []), node.get("private_source_files", []))
     return sanitized
 
 
 def sanitize_public_edge(edge: Dict[str, Any]) -> Dict[str, Any]:
     sanitized = dict(edge)
-    sanitized["documents"] = without_private_profile(edge.get("documents", []))
-    sanitized["document_ids"] = without_private_profile(edge.get("document_ids", []))
-    sanitized["source_files"] = without_private_profile(edge.get("source_files", []))
+    sanitized["documents"] = without_private_values(edge.get("documents", []), edge.get("private_documents", []))
+    sanitized["document_ids"] = without_private_values(edge.get("document_ids", []), edge.get("private_document_ids", []))
+    sanitized["source_files"] = without_private_values(edge.get("source_files", []), edge.get("private_source_files", []))
     sanitized["evidence"] = re.sub(
         r"(?:\s*\|\s*)?Declared in the private user profile under [^.]+\.",
         "",

@@ -10,6 +10,23 @@ from local_rag.profile_graph import USER_NODE_ID, build_profile_graph
 
 
 class ProfileGraphTests(unittest.TestCase):
+    def test_showcase_scrubs_generic_private_source_provenance(self) -> None:
+        sanitized = export_showcase.sanitize_public_node(
+            {
+                "node_id": "shared_skill",
+                "documents": ["Public Note", "Private Reflection 2026-08-16"],
+                "document_ids": ["public_note", "reflection_session"],
+                "source_files": ["knowledge/public.md", "storage/private_reflection.json"],
+                "private_documents": ["Private Reflection 2026-08-16"],
+                "private_document_ids": ["reflection_session"],
+                "private_source_files": ["storage/private_reflection.json"],
+            }
+        )
+
+        self.assertEqual(sanitized["documents"], ["Public Note"])
+        self.assertEqual(sanitized["document_ids"], ["public_note"])
+        self.assertEqual(sanitized["source_files"], ["knowledge/public.md"])
+
     def test_profile_becomes_a_private_user_center_with_structured_links(self) -> None:
         profile_yaml = """
 user_profile:
@@ -134,6 +151,9 @@ user_profile:
                     "documents": ["Public Note", "User Profile"],
                     "document_ids": ["public_note", "user_profile"],
                     "source_files": ["knowledge/public.md", "config/user_profile.yaml"],
+                    "private_documents": ["User Profile"],
+                    "private_document_ids": ["user_profile"],
+                    "private_source_files": ["config/user_profile.yaml"],
                 },
                 {"node_id": "concept", "name": "Public Concept", "type": "Concept", "degree": 1},
             ]

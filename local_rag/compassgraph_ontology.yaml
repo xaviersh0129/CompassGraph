@@ -88,6 +88,10 @@ node_types:
       - Retrieval Precision
 
 edge_types:
+  REFLECTED_ON:
+    description: The user discussed an entity in a private guided reflection.
+    example: You -> REFLECTED_ON -> A Recent Learning Experience
+
   TARGETS:
     description: The user is actively considering or aiming for a role.
     example: You -> TARGETS -> Product Manager

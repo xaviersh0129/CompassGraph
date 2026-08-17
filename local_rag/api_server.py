@@ -769,6 +769,7 @@ def run_action(
     script: str,
     args: list[str],
     env_overrides: dict[str, str] | None = None,
+    input_text: str | None = None,
 ) -> dict[str, Any]:
     command = [sys.executable, str(PROJECT_ROOT / script), *args]
     environment = None
@@ -784,6 +785,7 @@ def run_action(
         timeout=1800,
         check=False,
         env=environment,
+        input=input_text,
     )
     return {
         "command": " ".join(command),
@@ -914,6 +916,32 @@ class NoemaHandler(BaseHTTPRequestHandler):
                 if llm_metadata:
                     answer_payload["llm"] = llm_metadata
                 self.write_json(answer_payload)
+            elif parsed.path == "/api/actions/reflect":
+                action = str(payload.get("action", "status")).strip().lower() or "status"
+                if action not in {"status", "start", "answer", "undo"}:
+                    raise ValueError("Reflection action must be one of: status, start, answer, undo.")
+
+                llm_environment = None
+                llm_metadata = None
+                if action in {"start", "answer"}:
+                    llm_environment, llm_metadata, _ = resolve_web_llm_config(payload.get("llm"))
+
+                reflection_request = {
+                    "action": action,
+                    "session_id": str(payload.get("session_id", "")),
+                    "objective": str(payload.get("objective", "")),
+                    "answer": str(payload.get("answer", "")),
+                }
+                result = run_action(
+                    "local_rag/reflect_local_graph.py",
+                    ["--json"],
+                    env_overrides=llm_environment,
+                    input_text=json.dumps(reflection_request, ensure_ascii=False),
+                )
+                reflection_payload = parse_action_json(result)
+                if llm_metadata:
+                    reflection_payload["llm"] = llm_metadata
+                self.write_json(reflection_payload)
             elif parsed.path == "/api/actions/process-knowledge":
                 llm_environment, llm_metadata, _ = resolve_web_llm_config(payload.get("llm"))
                 uploaded_paths = save_knowledge_uploads(payload.get("files"))

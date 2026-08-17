@@ -186,6 +186,19 @@ class WebLlmConfigTests(unittest.TestCase):
         self.assertNotIn("test-secret", result["command"])
         self.assertEqual(run_mock.call_args.kwargs["env"]["LLM_API_KEY"], "test-secret")
 
+    @patch("local_rag.api_server.subprocess.run")
+    def test_private_reflection_input_is_passed_over_stdin(self, run_mock) -> None:
+        run_mock.return_value = SimpleNamespace(returncode=0, stdout="{}", stderr="")
+
+        result = run_action(
+            "local_rag/reflect_local_graph.py",
+            ["--json"],
+            input_text='{"answer":"private reflection"}',
+        )
+
+        self.assertNotIn("private reflection", result["command"])
+        self.assertEqual(run_mock.call_args.kwargs["input"], '{"answer":"private reflection"}')
+
 
 if __name__ == "__main__":
     unittest.main()

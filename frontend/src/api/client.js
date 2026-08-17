@@ -61,6 +61,19 @@ export function askNoema({ question, maxNodes = 12, maxEdges = 35, llm } = {}) {
   })
 }
 
+export function reflectNoema({ action = 'status', sessionId = '', objective = '', answer = '', llm } = {}) {
+  return request('/api/actions/reflect', {
+    method: 'POST',
+    body: JSON.stringify({
+      action,
+      session_id: sessionId,
+      objective,
+      answer,
+      ...(llm ? { llm } : {})
+    })
+  })
+}
+
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()

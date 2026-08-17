@@ -12,6 +12,7 @@ You do not need an API key to try the sample graph or use the visualization.
 - Uses your selected AI model to create nodes and links automatically.
 - Indexes uploaded notes for local semantic search.
 - Answers questions with both graph relationships and relevant note passages.
+- Asks guided reflection questions and grows the private graph from your answers.
 - Exports a standalone showcase website for portfolios, LinkedIn, and hiring managers.
 
 In simple terms, a knowledge graph is a map of what you know. GraphRAG uses that map to find useful context before answering a question.
@@ -23,6 +24,7 @@ In simple terms, a knowledge graph is a map of what you know. GraphRAG uses that
 | See the app working with example data | [Quick Start: Try The Sample](#quick-start-try-the-sample) |
 | Add notes and build your own graph | [Add Your Own Knowledge](#add-your-own-knowledge) |
 | Ask questions with an AI provider | [Optional: Ask Questions With An AI Provider](#optional-ask-questions-with-an-ai-provider) |
+| Let Noema interview you and grow the graph | [Grow The Graph Through Reflection](#grow-the-graph-through-reflection) |
 | Share the graph publicly | [Export A Public Showcase](#export-a-public-showcase) |
 
 ## Before You Start
@@ -231,6 +233,7 @@ Uploading a file with the same filename updates that source. Its extraction JSON
 - Click any visible node to isolate its neighborhood.
 - Click a blank part of the graph or **Default view** to return to the full graph.
 - Ask a question in the bottom text box. Noema retrieves relevant graph relationships and indexed note passages before calling the selected model.
+- Select **Reflect** when you want Noema to interview you and enrich the graph from your answers.
 
 ### What The Upload Creates
 
@@ -490,7 +493,21 @@ python local_rag/import_reviewed_graph.py
 
 Refresh the web app. Your preferred name, or your full name when no preferred name is set, becomes the central **User** node. Noema creates private links for useful graph context while intentionally leaving sensitive administrative details such as location, nationality, grades, and dates out of the visualization. The complete profile can still guide answers.
 
-This private file is ignored by Git. Its contents may still be sent to the model selected in the web app or configured in `.env` whenever you use **Ask Noema**, so include only information you are comfortable sharing with that provider. The public `user_profile.example.yaml` contains neutral placeholders and is safe to publish.
+This private file is ignored by Git. Its contents may still be sent to the model selected in the web app or configured in `.env` whenever you use **Ask** or **Reflect**, so include only information you are comfortable sharing with that provider. The public `user_profile.example.yaml` contains neutral placeholders and is safe to publish.
+
+## Grow The Graph Through Reflection
+
+Reflect mode helps Noema learn useful knowledge that may not exist in your uploaded notes yet.
+
+1. Open the web app and select **Reflect** above the bottom text box.
+2. Optionally enter a focus such as `career direction`, `projects`, or `knowledge gaps`. Leave it empty for a general reflection.
+3. Click **Begin**. Noema inspects the private profile and graph, then asks one focused question.
+4. Write your answer and click **Add**. Noema extracts only claims grounded in that answer, connects them to the graph, and asks the next question.
+5. Use the undo icon to remove the latest answer and its graph update. Use the plus icon to begin a separate reflection.
+
+Every completed answer is stored as a private local reflection source and added to semantic search. This allows later questions in **Ask** mode to use both the structured links and the full answer. Refreshing the browser resumes the latest reflection.
+
+Reflection data is ignored by Git and excluded from public showcase exports. When Gemini or OpenAI is selected, that provider receives the reflection question, your answer, and relevant private graph context. Choose **Local Ollama** when all reflection processing must remain on your computer.
 
 ## Export A Public Showcase
 
@@ -542,7 +559,9 @@ After review, publish the `showcase/` folder with a static website host such as 
 project-folder/
   knowledge/inbox/                   Your original local uploads.
   knowledge/processed/               Normalized Markdown notes.
+  knowledge/processed/reflections/   Private answers indexed for later retrieval.
   storage/graph_extraction_outputs/  Extracted or manually reviewed graph JSON.
+  storage/reflections/sessions/      Private reflection history and undo data.
   storage/graph_nodes.jsonl          Generated combined graph nodes.
   storage/graph_edges.jsonl          Generated combined graph edges.
   storage/chroma/                    Generated local semantic-search index.

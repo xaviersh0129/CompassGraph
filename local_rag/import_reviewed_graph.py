@@ -167,8 +167,10 @@ def normalize_nodes_from_file(path: Path, payload: Dict[str, Any]) -> List[Dict[
 
         node_type = normalize_node_type(raw_node.get("type", "Concept"))
 
+        node_id = slugify(raw_node.get("node_id") or name)
+        is_private = bool(payload.get("private", False) or raw_node.get("private", False))
         node = {
-            "node_id": slugify(name),
+            "node_id": node_id,
             "name": name,
             "type": node_type,
             "description": normalize_name(raw_node.get("description")),
@@ -177,7 +179,16 @@ def normalize_nodes_from_file(path: Path, payload: Dict[str, Any]) -> List[Dict[
             "source_files": [portable_path(path)],
             "created_at": now,
             "updated_at": now,
+            "private": is_private,
+            "is_user": bool(raw_node.get("is_user", False)),
+            "is_profile_derived": bool(raw_node.get("is_profile_derived", False)),
+            "is_reflection_derived": bool(raw_node.get("is_reflection_derived", False)),
         }
+
+        if is_private:
+            node["private_documents"] = [document_title]
+            node["private_document_ids"] = [document_id]
+            node["private_source_files"] = [portable_path(path)]
 
         nodes.append(node)
 
@@ -199,16 +210,19 @@ def normalize_edges_from_file(path: Path, payload: Dict[str, Any]) -> List[Dict[
         if not source or not target:
             continue
 
-        edge_id = f"{slugify(source)}__{relation}__{slugify(target)}"
+        source_id = slugify(raw_edge.get("source_id") or source)
+        target_id = slugify(raw_edge.get("target_id") or target)
+        edge_id = f"{source_id}__{relation}__{target_id}"
+        is_private = bool(payload.get("private", False) or raw_edge.get("private", False))
 
         edge = {
             "edge_id": edge_id,
             "source": source,
-            "source_id": slugify(source),
+            "source_id": source_id,
             "source_type": normalize_node_type(raw_edge.get("source_type", "")),
             "relation": relation,
             "target": target,
-            "target_id": slugify(target),
+            "target_id": target_id,
             "target_type": normalize_node_type(raw_edge.get("target_type", "")),
             "evidence": normalize_name(raw_edge.get("evidence")),
             "confidence": safe_float(raw_edge.get("confidence", 0.8)),
@@ -217,7 +231,15 @@ def normalize_edges_from_file(path: Path, payload: Dict[str, Any]) -> List[Dict[
             "source_files": [portable_path(path)],
             "created_at": now,
             "updated_at": now,
+            "private": is_private,
+            "is_profile_derived": bool(raw_edge.get("is_profile_derived", False)),
+            "is_reflection_derived": bool(raw_edge.get("is_reflection_derived", False)),
         }
+
+        if is_private:
+            edge["private_documents"] = [document_title]
+            edge["private_document_ids"] = [document_id]
+            edge["private_source_files"] = [portable_path(path)]
 
         edges.append(edge)
 
@@ -256,10 +278,16 @@ def merge_nodes(nodes: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         existing["document_ids"] = merge_list_values(existing.get("document_ids", []), node.get("document_ids", []))
         existing["source_files"] = merge_list_values(existing.get("source_files", []), node.get("source_files", []))
         existing["profile_sections"] = merge_list_values(existing.get("profile_sections", []), node.get("profile_sections", []))
+        existing["private_documents"] = merge_list_values(existing.get("private_documents", []), node.get("private_documents", []))
+        existing["private_document_ids"] = merge_list_values(existing.get("private_document_ids", []), node.get("private_document_ids", []))
+        existing["private_source_files"] = merge_list_values(existing.get("private_source_files", []), node.get("private_source_files", []))
         existing["private"] = bool(existing.get("private", False) and node.get("private", False))
         existing["is_user"] = bool(existing.get("is_user", False) or node.get("is_user", False))
         existing["is_profile_derived"] = bool(
             existing.get("is_profile_derived", False) or node.get("is_profile_derived", False)
+        )
+        existing["is_reflection_derived"] = bool(
+            existing.get("is_reflection_derived", False) or node.get("is_reflection_derived", False)
         )
         existing["updated_at"] = datetime.now().isoformat()
 
@@ -280,15 +308,23 @@ def merge_edges(edges: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         existing_private = bool(existing.get("private", False))
         edge_private = bool(edge.get("private", False))
 
-        # A public relationship may overlap a profile-derived relationship. Keep
-        # the public evidence clean while the direct User links retain the private context.
+        # A public relationship may overlap a private one. Keep public evidence
+        # clean while direct User links retain the private context.
         if existing_private != edge_private:
             if existing_private:
                 replacement = dict(edge)
-                replacement["is_profile_derived"] = True
+                replacement["is_profile_derived"] = bool(
+                    existing.get("is_profile_derived", False) or edge.get("is_profile_derived", False)
+                )
+                replacement["is_reflection_derived"] = bool(existing.get("is_reflection_derived", False))
                 merged[edge_id] = replacement
             else:
-                existing["is_profile_derived"] = True
+                existing["is_profile_derived"] = bool(
+                    existing.get("is_profile_derived", False) or edge.get("is_profile_derived", False)
+                )
+                existing["is_reflection_derived"] = bool(
+                    existing.get("is_reflection_derived", False) or edge.get("is_reflection_derived", False)
+                )
             continue
 
         if edge.get("confidence", 0) > existing.get("confidence", 0):
@@ -304,9 +340,15 @@ def merge_edges(edges: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         existing["document_ids"] = merge_list_values(existing.get("document_ids", []), edge.get("document_ids", []))
         existing["source_files"] = merge_list_values(existing.get("source_files", []), edge.get("source_files", []))
         existing["profile_sections"] = merge_list_values(existing.get("profile_sections", []), edge.get("profile_sections", []))
+        existing["private_documents"] = merge_list_values(existing.get("private_documents", []), edge.get("private_documents", []))
+        existing["private_document_ids"] = merge_list_values(existing.get("private_document_ids", []), edge.get("private_document_ids", []))
+        existing["private_source_files"] = merge_list_values(existing.get("private_source_files", []), edge.get("private_source_files", []))
         existing["private"] = bool(existing.get("private", False) and edge.get("private", False))
         existing["is_profile_derived"] = bool(
             existing.get("is_profile_derived", False) or edge.get("is_profile_derived", False)
+        )
+        existing["is_reflection_derived"] = bool(
+            existing.get("is_reflection_derived", False) or edge.get("is_reflection_derived", False)
         )
         existing["updated_at"] = datetime.now().isoformat()
 
@@ -341,6 +383,10 @@ def add_missing_endpoint_nodes(
                 "profile_sections": edge.get("profile_sections", []),
                 "private": bool(edge.get("private", False)),
                 "is_profile_derived": bool(edge.get("is_profile_derived", False)),
+                "is_reflection_derived": bool(edge.get("is_reflection_derived", False)),
+                "private_documents": edge.get("private_documents", []),
+                "private_document_ids": edge.get("private_document_ids", []),
+                "private_source_files": edge.get("private_source_files", []),
                 "created_at": now,
                 "updated_at": now,
             }

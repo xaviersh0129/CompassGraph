@@ -115,13 +115,18 @@
       <AskComposer
         v-model:question="askQuestion"
         v-model:question-level="questionLevel"
+        v-model:mode="interactionMode"
         :answer="askAnswer"
         :error="askError"
         :loading="askLoading"
         :submitted-question="askSubmittedQuestion"
         :model-label="activeModelLabel"
         :model-configured="activeModelConfigured"
+        :reflection="reflectionState"
         @ask="runAsk"
+        @reflect="runReflect"
+        @undo-reflection="undoReflection"
+        @new-reflection="newReflection"
         @clear="clearAsk"
         @open-settings="modelSettingsOpen = true"
       />
@@ -171,6 +176,7 @@ import {
   getDocuments,
   getGraph,
   processKnowledge,
+  reflectNoema,
   searchNodes
 } from './api/client'
 
@@ -186,6 +192,16 @@ const askSubmittedQuestion = ref('')
 const askAnswer = ref('')
 const askError = ref('')
 const questionLevel = ref('balanced')
+const interactionMode = ref('ask')
+const reflectionState = ref({
+  active: false,
+  sessionId: '',
+  objective: '',
+  currentQuestion: '',
+  turns: [],
+  canUndo: false,
+  update: null
+})
 const llmSettings = ref(loadLlmSettings())
 const modelSettingsOpen = ref(false)
 const panelOpen = ref(false)
@@ -225,7 +241,16 @@ const activeViewLabel = computed(() => {
 })
 
 async function refreshAll() {
-  await Promise.allSettled([loadDocuments(), loadGraph()])
+  await Promise.allSettled([loadDocuments(), loadGraph(), loadReflection()])
+}
+
+async function loadReflection() {
+  try {
+    const payload = await reflectNoema({ action: 'status' })
+    reflectionState.value = { ...reflectionState.value, ...payload }
+  } catch {
+    reflectionState.value = { ...reflectionState.value, active: false }
+  }
 }
 
 async function loadDocuments() {
@@ -389,6 +414,79 @@ async function runAsk() {
   }
 }
 
+async function runReflect() {
+  const isStarting = !reflectionState.value.active
+  const response = askQuestion.value.trim()
+  if (!isStarting && !response) return
+
+  if (!activeModelConfigured.value) {
+    askError.value = `Add a ${activeModelProvider.value.label} API key before reflecting.`
+    modelSettingsOpen.value = true
+    return
+  }
+
+  askLoading.value = true
+  askError.value = ''
+  askQuestion.value = ''
+
+  try {
+    const payload = await reflectNoema({
+      action: isStarting ? 'start' : 'answer',
+      sessionId: reflectionState.value.sessionId,
+      objective: isStarting ? response : '',
+      answer: isStarting ? '' : response,
+      llm: currentLlmPayload()
+    })
+    reflectionState.value = payload
+    if (!isStarting) await showReflectionGraphUpdate()
+  } catch (error) {
+    askError.value = error.message || 'Noema could not continue the reflection.'
+  } finally {
+    askLoading.value = false
+  }
+}
+
+async function undoReflection() {
+  if (!reflectionState.value.canUndo || askLoading.value) return
+  askLoading.value = true
+  askError.value = ''
+  try {
+    reflectionState.value = await reflectNoema({
+      action: 'undo',
+      sessionId: reflectionState.value.sessionId
+    })
+    await showReflectionGraphUpdate()
+  } catch (error) {
+    askError.value = error.message || 'Noema could not undo the latest reflection.'
+  } finally {
+    askLoading.value = false
+  }
+}
+
+function newReflection() {
+  reflectionState.value = {
+    active: false,
+    sessionId: '',
+    objective: '',
+    currentQuestion: '',
+    turns: [],
+    canUndo: false,
+    update: null
+  }
+  askQuestion.value = ''
+  askError.value = ''
+}
+
+async function showReflectionGraphUpdate() {
+  focusedNodeId.value = ''
+  selected.value = null
+  filters.q = ''
+  filters.nodeCategory = ''
+  nodeSearchQuery.value = ''
+  nodeSearchResults.value = []
+  await Promise.all([loadDocuments(), loadGraph({ focusNodeId: '' })])
+}
+
 function currentLlmPayload() {
   return {
     provider: activeModelProvider.value.id,
@@ -443,6 +541,11 @@ function clearAsk() {
   askAnswer.value = ''
   askError.value = ''
 }
+
+watch(interactionMode, () => {
+  askQuestion.value = ''
+  askError.value = ''
+})
 
 watch(nodeSearchQuery, (query) => {
   if (nodeSearchTimer) window.clearTimeout(nodeSearchTimer)
